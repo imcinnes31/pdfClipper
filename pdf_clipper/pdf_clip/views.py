@@ -49,7 +49,7 @@ class FileViewSet2(generics.ListAPIView):
 
 # Create your views here.
 
-def upload(request):
+def index(request):
     if request.method == 'POST':
         if 'myfile' in request.FILES:
             myfile = request.FILES['myfile']
@@ -67,7 +67,7 @@ def upload(request):
                     "pages": len(pdf.pages),
                 })
             else:
-                return render(request, "pdf_clip/upload.html", {
+                return render(request, "pdf_clip/index.html", {
                     "errorMsg": "That is not a pdf file.",
                 })
         elif 'clips' in request.POST:
@@ -97,7 +97,7 @@ def upload(request):
                     # print(thisFile)
                     thisFile.delete()
 
-        return render(request, 'pdf_clip/upload.html')
+        return render(request, 'pdf_clip/index.html')
 
 def clip(request):
     currentFile = File.objects.get(id=17)
