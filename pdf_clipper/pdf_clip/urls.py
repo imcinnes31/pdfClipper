@@ -12,7 +12,7 @@ urlpatterns = [
     path("create", views.create, name="create"),
     path("build", views.build, name="build"),
     path("test", views.test, name="test"),
-    path("", views.index, name="index"),
+    path("", views.upload, name="upload"),
 
     path("api/files", views.FileViewSet2.as_view(), name='fileView'),
     path("api/clips", views.ClipViewSet2.as_view(), name='clipView'),

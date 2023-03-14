@@ -467,7 +467,7 @@
             <button onclick="addReturnFormInfo()">Return to Clip Selection</button>
             <button id="createPDFButton" onclick="addCreateFormInfo()">Make New PDF File</button>
         
-            <form id="returnForm" method="post" action="{% url 'index' %}">
+            <form id="returnForm" method="post" action="{% url 'upload' %}">
                 {% csrf_token %}
             </form>
             <form id="createForm" method="post" action="{% url 'build' %}">
