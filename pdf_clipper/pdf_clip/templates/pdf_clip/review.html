@@ -1,0 +1,481 @@
+{% extends "pdf_clip/layout.html" %}
+
+{% block head %}
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>My PDF Viewer Clip Review</title>
+        <style>
+            #canvas_container {
+                width: 600px;
+                height: 605px;
+                overflow: auto;
+                background: #333;
+                text-align: center;
+                border: solid 3px;
+                /* position: absolute; */
+                top: 10px;
+                left: 20px;
+            }
+            #clipListScreen {
+                width: 700px;
+                height: 600px;
+                overflow-y: scroll;
+                border: 1px solid black;
+            }
+            table { 
+                border-collapse: collapse; 
+            }
+            tr:first-child {
+                border : 1px solid black;
+            }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.0.943/pdf.min.js"></script>
+        <script>
+            // : change scale to account for portrait / landscape pages
+            var myPdf = null;
+            var posArray = []
+            var moveArray = [];
+            var deleteArray = [];
+            var clipData = null;
+            var noteNumber = null;
+            var currentView = null;
+
+            pdfjsLib.getDocument('../static/upload/' + '{{ currentFile }}').then((pdf) => {  
+                myPdf = pdf;
+            });
+
+            function render(pageNumber, minY, maxY, minX, maxX) {
+                myPdf.getPage(pageNumber).then((page) => {
+                // myPdf.getPage(24).then((page) => {
+        
+                    // console.log(page.view);
+                
+                    // console.log(Math.floor(600 / page.view[3] * 100) / 100);
+        
+                    var canvas = document.getElementById("pdf_renderer");
+                    var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        
+                    const scale = Math.floor(600 / (page.view[3] - page.view[1]) * 100) / 100;
+                    var viewport = page.getViewport(scale);
+                    // var viewport = page.getViewport(1);
+        
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    })
+                    .then((page) => {
+                        // sample data for rendering partial render in inspection page
+                        let imageData;
+                        if (minX == null && maxX == null) {
+                            imageData = ctx.getImageData(0, minY, viewport.width, maxY - minY);   // 0, line2, page width, section height (line 2 minus line 1)
+                        } else {
+                            imageData = ctx.getImageData(minX, minY, maxX - minX, maxY - minY);   // 0, line2, page width, section height (line 2 minus line 1)
+                        }
+                        var canvas1 = document.getElementById("pdf_renderer");
+                        if (minX == null && maxX == null) {
+                            canvas1.width = viewport.width;
+                        } else {
+                            canvas1.width = maxX - minX;
+                        }
+                        canvas1.height = 600;
+                        let ctx1 = canvas1.getContext("2d", { willReadFrequently: true });
+                        ctx1.rect(0, 0, 600, 600);
+                        ctx1.fillStyle = '#333';
+                        ctx1.fill();
+                        ctx1.putImageData(imageData, 0, Math.ceil((600 - (maxY - minY))/2));
+        
+                    })
+                    ;
+        
+        
+                });
+        
+            }
+ 
+            document.addEventListener('DOMContentLoaded', function () {
+                clipData = JSON.parse('{{ clipsJson|safe }}');
+                fileData = ('{{ currentFile }}');
+                posArray = JSON.parse('{{ posArray|safe }}');
+
+                var dictLength = Object.keys(clipData).length;
+                // for (let i = 0; i < dictLength; i++) {
+                //     posArray.push(i);
+                // }
+
+                setupTable(clipData, posArray);
+
+                setupButtons();
+
+                // for (let i = 0; i < dictLength; i++) {
+                //     if (clipData[i]['note']) {
+                //         const noteId = "note" + i;
+                //         document.getElementById(noteId).innerHTML = clipData[i]['note'];
+                //     }
+                // }
+                // if (notesData[dictLength]) {
+                //     noteId = "note" + posArray.length;
+                //     document.getElementById(noteId).innerHTML = notesData[dictLength];
+                // }
+
+            });
+
+            function setupTable(clipData, posArray) {
+                // console.log(clipData);
+                // console.log(posArray);
+                var tableContents = "<tr id='tableHeader'><th></th><th>Clip No.</th><th>Page</th><th style='width:250px'>Note</th><th></th><th></th><th></th></tr>";
+                for (number in posArray) {
+                    tableContents += "<tr id='row" + number + "'>";
+                    tableContents += "<td><input type='checkbox' class='moveCheckbox' id='moveCheck" + number + "'></td>";
+                    tableContents += "<td id='clip" + posArray[number] + "'>" + posArray[number] + "</td>";
+                    tableContents += "<td>" + clipData[posArray[number]]['pageNumber'] + "</td>";
+                    tableContents += "<td style='width:250px' id='note" + posArray[number] + "'>" + clipData[posArray[number]].note + "</td>";
+                    // if (notesData[posArray[number]]) {
+                    //     tableContents += "<td id='note" + posArray[number] + "'>" + notesData[posArray[number]] + "</td>";
+                    // } else {
+                    //     tableContents += "<td id='note" + posArray[number] + "'></td>";
+                    // }
+                    tableContents += "<td><button class='noteButton' id='editNote" + posArray[number] + "'>Edit Note</button>";
+                    tableContents += "<button class='saveNoteButton' id='saveNote" + posArray[number] + "' style='display:none;'>Save Note</button></td>";
+                    tableContents += "<td><button class='deleteButton' id='delete" + posArray[number] + "'>Delete Clip</button></td>";
+                    tableContents += "<td><button class='viewButton' id='view" + posArray[number] + "'>View</button></td>";
+                    tableContents += "</tr>";
+                }
+
+                // console.log(clipData);
+                // console.log(posArray);
+                // if (notesData[posArray.length]) {
+                //     tableContents += "<tr><td></td><td>End</td><td></td><td></td><td></td><td id='note" + posArray.length + "Final'>" + notesData[posArray.length] + "</td><td><button class='noteButton' id='editNote" + posArray.length + "'>Edit Note</button></td></tr>";
+                // }
+                document.getElementById("clipTable").innerHTML = tableContents;
+            }
+
+            function setupButtons() {
+
+                document.querySelectorAll('.viewButton').forEach(button => {
+                    button.addEventListener('click', function handleClick(event) {
+                        const idNumber = event.target.id.replace('view', '');
+                        // console.log(clipData[idNumber]['page']);
+                        currentView = idNumber;
+                        render(clipData[idNumber]['pageNumber'], clipData[idNumber]['minY'], clipData[idNumber]['maxY'], clipData[idNumber]['minX'], clipData[idNumber]['maxX']);
+                    });
+                });
+
+                document.querySelectorAll('.deleteButton').forEach(button => {
+                    button.addEventListener('click', function handleClick(event) {
+                        const idNumber = event.target.id.replace('delete', '');
+                        deleteArray.push(parseInt(idNumber));
+                        // console.log(deleteArray);
+                        delete clipData[idNumber];
+                        posArray.splice(posArray.indexOf(parseInt(idNumber)), 1);
+                        if (posArray.length == 0) {
+                            document.getElementById('createPDFButton').disabled = true;
+                        }
+                        setupTable(clipData, posArray);
+                        if (idNumber == currentView) {
+                            var canvas1 = document.getElementById("pdf_renderer");
+                            let ctx1 = canvas1.getContext("2d", { willReadFrequently: true });
+                            ctx1.rect(0, 0, 600, 600);
+                            ctx1.fillStyle = '#333';
+                            ctx1.fill();
+                        }
+
+                        document.querySelectorAll('.moveCheckbox').forEach(e => e.replaceWith(e.cloneNode(true)));
+                        document.querySelectorAll('.viewButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+                        document.querySelectorAll('.deleteButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+                        document.querySelectorAll('.noteButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+
+                        setupButtons();
+
+                    });
+
+                });
+
+                document.querySelectorAll('.noteButton').forEach(button => {
+                    button.addEventListener('click', function handleClick(event) {
+
+                        const noteId = event.target.id.replace("editNote", "note");
+                        const saveNoteId = event.target.id.replace("editNote", "saveNote");
+                        const currentNote = document.getElementById(noteId).innerHTML;
+                        const newNote = currentNote.replace('&apos;','\'');
+                        console.log(newNote);
+
+                        document.querySelectorAll('.noteButton').forEach(e => {
+                            if (e != event.target) {
+                                e.disabled = true;
+                            }
+                        });
+                        for (let i = 0; i < posArray.length; i++) {
+                            const checkButtonId = 'moveCheck' + i;
+                            const delButtonId = 'delete' + posArray[i];
+                            document.getElementById(checkButtonId).checked = false;
+                            document.getElementById(checkButtonId).style.display = "none";
+                            document.getElementById(delButtonId).style.display = "none";
+                        }
+                        document.getElementById(saveNoteId).style.display = "block";
+                        event.target.style.display = "none";
+                        document.getElementById(noteId).innerHTML = "<input style='width:240px' type='text' id='messageEdit' value=''></input>";
+                        document.getElementById(noteId).childNodes[0].value = newNote;
+                        document.getElementById('messageEdit').focus()
+
+                        document.getElementById(saveNoteId).replaceWith(document.getElementById(saveNoteId).cloneNode(true));
+                        document.getElementById(saveNoteId).addEventListener('click', function handleClick(event) {
+                            const noteId = event.target.id.replace("saveNote", "note");
+                            const editNoteId = event.target.id.replace("saveNote", "editNote");
+                            document.querySelectorAll('.noteButton').forEach(e => {
+                                if (e != event.target) {
+                                    e.disabled = false;
+                                }
+                            });
+                            document.getElementById(editNoteId).style.display = "block";
+                            event.target.style.display = "none";
+                            const changedNote = document.getElementById(noteId).childNodes[0].value.trim();
+                            const noteNumber = event.target.id.replace("saveNote", "");
+                            clipData[noteNumber]['note'] = changedNote;
+                            // console.log(clipData[noteNumber]['note']);
+                            document.getElementById(noteId).innerHTML = changedNote;
+                            for (let i = 0; i < posArray.length; i++) {
+                                const checkButtonId = 'moveCheck' + i;
+                                const delButtonId = 'delete' + posArray[i];
+                                document.getElementById(checkButtonId).style.display = "block";
+                                document.getElementById(delButtonId).style.display = "block";
+                            }
+                            document.querySelectorAll('.moveCheckbox').forEach(e => e.replaceWith(e.cloneNode(true)));
+                            document.querySelectorAll('.deleteButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+                            document.querySelectorAll('.noteButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+                            document.querySelectorAll('.viewButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+
+                            setupButtons();
+                        });
+                    });
+                });
+
+                document.querySelectorAll('.moveCheckbox').forEach(button => {
+                    button.addEventListener('click', function handleClick(event) {
+                        // console.log(event.target.id);
+                        // console.log(event.target.parentNode.parentNode.id);
+                        // console.log(event.target.checked);
+                        if (event.target.checked == true) {
+                            moveArray.push(posArray[parseInt(event.target.parentNode.parentNode.id.replace("row",""))]);
+                        } else {
+                            moveArray.splice(moveArray.indexOf(posArray[parseInt(event.target.parentNode.parentNode.id.replace("row",""))]), 1)
+                        }
+
+                        if (moveArray.length > 0) {
+                            document.getElementById("moveButton").style.display="block";
+                        } else {
+                            document.getElementById("moveButton").style.display="none";
+                        }
+                        // console.log(moveArray);
+
+                    });
+                });
+
+            }
+
+
+            function showMoveButtons() {
+                const firstMoveButton = "<tr class='moveToRow'><td><button class='moveToButton' id='moveTo0'>Move here</button></td></tr>"
+                document.getElementById("tableHeader").insertAdjacentHTML("afterend", firstMoveButton);
+
+                var moveCount = 0;
+                for (let i = 0; i < posArray.length; i++) {
+                    if (!moveArray.includes(i)) {
+                        moveCount++;
+                        const moveButton = "<tr class='moveToRow'><td><button class='moveToButton' id='moveTo" + moveCount + "'>Move here</button></td></tr>";
+                        const rowId = "row" + i;
+                        document.getElementById(rowId).insertAdjacentHTML("afterend", moveButton);
+                    } else {
+                        const clipId = 'clip' + i;
+                        document.getElementById(clipId).style.color = "red";
+                    }
+                }
+                for (let i = 0; i < posArray.length; i++) {
+                    const checkButtonId = 'moveCheck' + i;
+                    const notButtonId = 'editNote' + posArray[i];
+                    const delButtonId = 'delete' + posArray[i];
+                    document.getElementById(checkButtonId).style.display = "none";
+                    document.getElementById(notButtonId).style.display = "none";
+                    document.getElementById(delButtonId).style.display = "none";  
+                }
+                document.getElementById("cancelMoveButton").style.display="block";
+                document.querySelectorAll('.moveToButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+
+                document.querySelectorAll('.moveToButton').forEach(button => {
+                    button.addEventListener('click', function handleMoveClick(event) {
+                        // console.log('moving');
+                        // console.log(posArray);
+                        // console.log(moveArray);
+                        // console.log(event.target.id);
+                        moveArray.reverse();
+                        for (number in moveArray) {
+                            const index = posArray.indexOf(moveArray[number]);
+                            if (index !== -1) {
+                                posArray.splice(index, 1);
+                            }
+                        }
+                        moveNumber = parseInt(event.target.id.replace("moveTo",""));
+                        // console.log("move number: " + moveNumber);
+                        if (moveNumber == posArray.length) {
+                            moveArray.reverse();
+                            for (number in moveArray) {
+                                posArray.push(moveArray[number]);
+                            }
+                        } else {
+                            for (number in moveArray) {
+                                posArray.splice(moveNumber,0,moveArray[number]);
+                            }
+                        }
+                        // console.log(posArray);
+
+                        hideMoveButtons();
+
+                        setupTable(clipData, posArray);
+
+                        document.querySelectorAll('.moveCheckbox').forEach(e => e.replaceWith(e.cloneNode(true)));
+                        document.querySelectorAll('.viewButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+                        document.querySelectorAll('.deleteButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+                        document.querySelectorAll('.noteButton').forEach(e => e.replaceWith(e.cloneNode(true)));
+
+                        setupButtons();
+                    });
+                });
+            }
+
+            function hideMoveButtons() {                    
+                document.querySelectorAll('.moveToRow').forEach(e => e.remove());
+                document.getElementById("cancelMoveButton").style.display="none";
+                document.getElementById("moveButton").style.display="none";
+                for (let i = 0; i < posArray.length; i++) {
+                    const checkButtonId = 'moveCheck' + i;
+                    const notButtonId = 'editNote' + posArray[i];
+                    const delButtonId = 'delete' + posArray[i];
+                    const clipId = 'clip' +  posArray[i];
+                    document.getElementById(clipId).style.color = "black";
+                    document.getElementById(checkButtonId).checked = false;
+                    document.getElementById(checkButtonId).style.display = "block";
+                    document.getElementById(notButtonId).style.display = "block";
+                    document.getElementById(delButtonId).style.display = "block";
+                }
+                moveArray = [];
+            }
+
+            function addReturnFormInfo() {
+                var form=document.getElementById('returnForm');
+
+                console.log(clipData);
+
+                var inputClips = document.createElement('input');
+                inputClips.setAttribute('name', 'clips');
+                inputClips.setAttribute('value', JSON.stringify(clipData));
+                inputClips.setAttribute('type', 'hidden');
+
+                var inputPos = document.createElement('input');
+                inputPos.setAttribute('name', 'posArray');
+                inputPos.setAttribute('value', JSON.stringify(posArray));
+                inputPos.setAttribute('type', 'hidden');
+
+                var inputDel = document.createElement('input');
+                inputDel.setAttribute('name', 'delArray');
+                inputDel.setAttribute('value', JSON.stringify(deleteArray));
+                inputDel.setAttribute('type', 'hidden');
+
+                form.appendChild(inputClips);
+                form.appendChild(inputPos);
+                form.appendChild(inputDel);
+
+                form.submit();
+            }
+
+            function addCreateFormInfo() {
+                var form=document.getElementById('createForm');
+
+                console.log(clipData);
+
+                var inputClips = document.createElement('input');
+                inputClips.setAttribute('name', 'clips');
+                inputClips.setAttribute('value', JSON.stringify(clipData));
+                inputClips.setAttribute('type', 'hidden');
+
+                var inputPos = document.createElement('input');
+                inputPos.setAttribute('name', 'posArray');
+                inputPos.setAttribute('value', JSON.stringify(posArray));
+                inputPos.setAttribute('type', 'hidden');
+
+                var inputDel = document.createElement('input');
+                inputDel.setAttribute('name', 'delArray');
+                inputDel.setAttribute('value', JSON.stringify(deleteArray));
+                inputDel.setAttribute('type', 'hidden');
+
+                form.appendChild(inputClips);
+                form.appendChild(inputPos);
+                form.appendChild(inputDel);
+
+                form.submit();
+            }
+
+
+        </script>
+{% endblock %}
+{% block body %}
+    <h1>Clips Review</h1>
+    <div id="reviewScreen" style="display:inline-flex">
+        <div id="reviewClipsScreen">
+            <div id="clipListScreen">
+                <table id="clipTable">
+                    <!-- <tr id="tableHeader">
+                        <th></th>
+                        <th></th>
+                        <th>Page</th>
+                        <th></th>
+                        <th>Note</th>
+                        <th></th>
+                    </tr>
+            
+                    {% for key,value in clipsList.items %}
+                        <tr id="row{{forloop.counter0}}">
+                            <td><input type="checkbox" class="moveCheckbox" id="moveCheck{{forloop.counter0}}"></td>
+                            <td>{{key}}</td>
+                            <td>{{value.page}}</td>
+                            <td><button class="viewButton" id="view{{key}}">View</button></td>
+                            <td id="note{{forloop.counter0}}">{{value.note}}</td>
+                            <td><button class="noteButton" id="editNote{{key}}">Edit Note</button></td>
+                        </tr>
+                    {% endfor %}
+                    <tr><td><button class="moveToButton" id="moveTo{{clipsList|length}}" style="display:none">Move here</button></td></tr> -->
+                </table>
+            
+            </div>
+        
+            <div style="display:block">
+                <div id="moveButtonContainer" style="display:inline-flex">
+                    <button id="moveButton" style="display:none" onclick="showMoveButtons()">Move Nodes</button>
+                    <button id="cancelMoveButton" style="display:none" onclick="hideMoveButtons()">Cancel Move</button>
+                </div>
+            </div>
+                
+        </div>
+        <div id="reviewRenderScreen">
+            <div id="pdf_screen">
+                <div id="canvas_container">
+                    <canvas id="pdf_renderer"></canvas>
+                </div>
+            </div>
+        
+            <button onclick="addReturnFormInfo()">Return to Clip Selection</button>
+            <button id="createPDFButton" onclick="addCreateFormInfo()">Make New PDF File</button>
+        
+            <form id="returnForm" method="post" action="{% url 'upload' %}">
+                {% csrf_token %}
+            </form>
+            <form id="createForm" method="post" action="{% url 'build' %}">
+                {% csrf_token %}
+            </form>
+        </div>    
+    </div>
+
+
+
+{% endblock %}

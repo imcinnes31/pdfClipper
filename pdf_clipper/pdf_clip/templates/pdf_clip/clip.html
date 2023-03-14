@@ -1,0 +1,681 @@
+{% extends "pdf_clip/layout.html" %}
+
+{% load static %}
+
+{% block head %}
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>My PDF Viewer</title>
+        <style>
+            #inline_container {
+                display: inline-flex;
+            }
+            #my_pdf_viewer {
+                width: 800px;
+            }
+            #pdf_screen {
+                width: 650px;
+                height: 625px;
+                position: relative;
+            }
+            #canvas_container {
+                width: 600px;
+                height: 605px;
+                overflow: auto;
+                background: #333;
+                text-align: center;
+                border: solid 3px;
+                position: absolute;
+                top: 10px;
+                left: 20px;
+            }
+            #line_container_1, #line_container_2 {
+                position: absolute;
+                width: 630px;
+                height: 20px;
+                /* border: 1px solid black; */
+                left: 0px;
+            }
+            #line_container_3 {
+                position: absolute;
+                width: 20px;
+                height: 630px;
+                top: -10px;
+            }
+            #line_container_1 {
+                top: 3px;
+            }
+            #line_container_2 {
+                top: 103px;
+            }
+            #line_container_3 {
+                left: 312px;
+                display: none;
+            }
+            #line_1, #line_2 {
+                position: absolute;
+                top: 9px;
+                width: 610px;
+                left: 19px;
+            }
+            #line_3 {
+                position: absolute;
+                left: 9px;
+                height: 610px;
+                top: 19px;
+            }
+            #line_1_cursor, #line_2_cursor, #line_3_cursor {
+                position: absolute;
+                top: 0px;
+                width: 16px;
+                left: 0px;
+                height: 16px;
+                border-radius: 16px;
+            }
+            #line_1 {
+                border: 1px solid red;
+            }
+            #line_2 {
+                border: 1px solid blue;
+            }
+            #line_3 {
+                border: 2px solid green;
+            }
+            #line_1_cursor {
+                border: 2px solid red;
+            }
+            #line_2_cursor {
+                border: 2px solid blue;
+            }
+            #line_3_cursor {
+                border: 2px solid green;
+            }
+            #clipScreen {
+                display: inline-flex;
+            }
+            #clipListScreen {
+                padding: 5px;
+                border: 1px solid black;
+                height: 500px;
+                width: 400px;
+                overflow-y: scroll;
+            }
+            .dataCon {
+                margin: 0px;
+            }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.0.943/pdf.min.js"></script>
+        <script>
+            var mouseDown;
+            var lineDragged;
+            var scale;
+            var maxYLimit;
+            var minXLimit;
+            var maxXLimit;
+            var wideMode = false;
+
+            var dataNum = 0;
+
+            var line1Pos = 0;
+            var line2Pos = 100;
+            var line3Pos = 300;
+
+            var myState = {
+                pdf: null,
+                currentPage: 1,
+                zoom: 1
+            }
+
+            var myClips = {};
+            var lastClipNum = null;
+        
+            function render() {
+                myState.pdf.getPage(myState.currentPage).then((page) => {
+                // myState.pdf.getPage(24).then((page) => {
+        
+                    // console.log(page.view);
+                
+                    // console.log(Math.floor(600 / page.view[3] * 100) / 100);
+        
+                    var canvas = document.getElementById("pdf_renderer");
+                    var ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+                    scale = Math.floor(600 / (page.view[3] - page.view[1]) * 100) / 100;
+                    const height = Math.floor((page.view[3] - page.view[1]) * scale);
+                    const width = Math.floor((page.view[2] - page.view[0]) * scale);
+
+                    maxYLimit = height;
+                    if (width > height) {
+                        document.getElementById('line_container_1').style.width = '1030px';
+                        document.getElementById('line_1').style.width = '1010px';
+                        document.getElementById('line_container_2').style.width = '1030px';
+                        document.getElementById('line_2').style.width = '1010px';
+                        document.getElementById('pdf_screen').style.width = '1050px';
+                        document.getElementById('canvas_container').style.width = '1000px';
+                        document.getElementById('my_pdf_viewer').style.width = '1075px';
+                        document.getElementById('navigation_controls').style.paddingRight = '200px';
+                        document.getElementById('undoButtonContainer').style.paddingLeft = '150px';
+                        if (width > 1000) {
+                            minXLimit = 0;
+                            maxXLimit = 1000;
+                        } else {
+                            minXLimit = Math.ceil((1000 - width) / 2);
+                            maxXLimit = Math.ceil((1000 - width) / 2) + width;
+                        }
+                        if (wideMode == false) {
+                            wideMode = true;
+                            line3Pos = maxXLimit - minXLimit;
+                            document.getElementById('line_container_3').style.left = '512px';
+                        }
+                    } else {
+                        document.getElementById('line_container_1').style.width = '630px';
+                        document.getElementById('line_1').style.width = '610px';
+                        document.getElementById('line_container_2').style.width = '630px';
+                        document.getElementById('line_2').style.width = '610px';
+                        document.getElementById('pdf_screen').style.width = '650px';
+                        document.getElementById('canvas_container').style.width = '600px';
+                        document.getElementById('my_pdf_viewer').style.width = '800px';
+                        document.getElementById('navigation_controls').style.paddingRight = '50px';
+                        document.getElementById('undoButtonContainer').style.paddingLeft = '5px';
+
+                        minXLimit = Math.ceil((600 - width) / 2);
+                        maxXLimit = Math.ceil((600 - width) / 2) + width;
+                        if (wideMode == true) {
+                            wideMode = false;
+                            line3Pos = maxXLimit - minXLimit;
+                            document.getElementById('line_container_3').style.left = '312px';
+                        }
+                    }
+                    console.log("minXLimit " + minXLimit);
+                    console.log("maxXLimit " + maxXLimit);
+
+                    // if (page.view[3] - page.view[1] >= page.view[2] - page.view[0]) {
+                    //     scale = Math.floor(600 / (page.view[3] - page.view[1]) * 100) / 100;
+                    //     const height = Math.floor((page.view[3] - page.view[1]) * scale);
+                    //     const width = Math.floor((page.view[2] - page.view[0]) * scale);
+                    //     // console.log(height);
+                    //     // console.log(width);
+                    //     minYLimit = Math.floor((600 - height) / 2);
+                    //     maxYLimit = Math.floor((600 - height) / 2) + height;
+                    //     // console.log(Math.floor((600 - width) / 2));
+                    //     // console.log(Math.floor((600 - width) / 2) + width);
+                    // } else {
+                    //     scale = Math.floor(600 / (page.view[2] - page.view[0]) * 100) / 100;
+                    //     const height = Math.floor((page.view[3] - page.view[1]) * scale);
+                    //     const width = Math.floor((page.view[2] - page.view[0]) * scale);
+                    //     // console.log(height);
+                    //     // console.log(width);
+                    //     // console.log(Math.floor((600 - height) / 2));
+                    //     // console.log(Math.floor((600 - height) / 2) + height);
+                    //     // console.log(Math.floor((600 - width) / 2));
+                    //     // console.log(Math.floor((600 - width) / 2) + width);
+                    //     minYLimit = Math.floor((600 - height) / 2);
+                    //     maxYLimit = Math.floor((600 - height) / 2) + height;
+                    //     document.getElementById('pdf_renderer').style.paddingTop = Math.floor((600 - height) / 2) + 'px';
+
+                    //     // document.getElementById("line_container_1").style.top = (Math.floor((600 - height) / 2) + 3) + "px";
+                    //     // document.getElementById("line_container_2").style.top = (Math.floor((600 - height) / 2) + 100 + 3) + "px";  
+                    //     // TODO: set line1Pos and line2Pos on open                  
+                    // }
+        
+                    var viewport = page.getViewport(scale);
+                    // var viewport = page.getViewport(0.91);
+                    console.log(viewport);
+        
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+        
+                    page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    })
+                    // .then((page) => {
+                    //     // sample data for rendering partial render in inspection page
+                    //     let imageData = ctx.getImageData(0, 266, 360, 162);   // 0, line2, page width, section height (line 2 minus line 1)
+                    //     var canvas1 = document.getElementById("pdf_renderer");
+                    //     let ctx1 = canvas1.getContext("2d");
+                    //     ctx1.rect(0, 0, 600, 600);
+                    //     ctx1.fillStyle = '#333';
+                    //     ctx1.fill();
+                    //     ctx1.putImageData(imageData, 0, 219); // 600 minus section height divided by 2
+        
+                    // })
+                    ;
+        
+        
+                });
+        
+        
+            }
+
+            function saveThePage(entirePage, side) {
+                console.log(side);
+                const clipCon = document.getElementById('clipListScreen');
+                const clipTable = document.getElementById('clipTable');
+                
+                const currentRange = (Math.ceil(Math.min(line1Pos,line2Pos) / 600 * 100)) + '% to ' + (Math.ceil(Math.max(line1Pos,line2Pos) / 600 * 100)) + '%';
+                
+                const newRow = document.createElement('tr');
+                const newPageData = document.createElement('td');
+                newPageData.style.width = '75px';
+                newPageData.innerHTML = myState.currentPage;
+                const newSideData = document.createElement('td');
+                newSideData.style.width = '75px';
+                if (side != null) {
+                    newSideData.innerHTML = side;
+                } else {
+                    newSideData.innerHTML = '';
+                }                       
+                const newRangeData = document.createElement('td');
+                newRangeData.style.width = '200px';
+                if (entirePage == true) {
+                    newRangeData.innerHTML = 'Entire Page';
+                } else {
+                    newRangeData.innerHTML = currentRange;
+                }
+                
+                newRow.appendChild(newPageData);
+                newRow.appendChild(newSideData);
+                newRow.appendChild(newRangeData);
+                clipTable.appendChild(newRow);
+                clipCon.scrollTop = clipCon.scrollHeight;
+                
+                var currentClipNo = 0;
+                if (Object.keys(myClips).length > 0) {
+                    currentClipNo = Math.max(...Object.keys(myClips)) + 1;
+                }
+                myClips[currentClipNo] = {};
+                myClips[currentClipNo].pageNumber = myState.currentPage;
+                
+                if (entirePage == true) {
+                    myClips[currentClipNo].minY = 0;
+                    myClips[currentClipNo].maxY = 600;
+                } else {
+                    myClips[currentClipNo].minY = Math.min(line1Pos,line2Pos);
+                    myClips[currentClipNo].maxY = Math.max(line1Pos,line2Pos);						
+                }
+                
+                if (side == 'Left') {
+                    myClips[currentClipNo].minX = 0;
+                    myClips[currentClipNo].maxX = line3Pos;					
+                } else if (side == 'Right') {
+                    myClips[currentClipNo].minX = line3Pos;
+                    myClips[currentClipNo].maxX = maxXLimit - minXLimit;				
+                } else {
+                    myClips[currentClipNo].minX = null;
+                    myClips[currentClipNo].maxX = null;
+                }
+                
+                document.getElementById('clipsToSubmit').value = JSON.stringify(myClips);
+                console.log(document.getElementById('clipsToSubmit').value);
+                lastClipNum = currentClipNo;
+                document.getElementById('submitClips').disabled = false;
+                document.getElementById('undoButton').disabled = false;
+            
+            }
+
+
+        
+            // document.getElementById('get_copy')
+            //     .addEventListener('click', (e) => {
+            //         if (myState.pdf == null)
+            //             return;
+        
+            //             myState.pdf.getPage(myState.currentPage).then((page) => {
+        
+            //             var canvas = document.getElementById("copy_renderer");
+            //             var ctx = canvas.getContext('2d');
+        
+            //             page.setMediaBox(100, 100, 200, 200)
+        
+            //             var viewport = page.getViewport(Math.round(600 / page.view[3] * 100) / 100);
+            //             // var viewport = page.getViewport(1);
+        
+            //             canvas.width = viewport.width;
+            //             canvas.height = viewport.height;
+        
+            //             page.render({
+            //                 canvasContext: ctx,
+            //                 viewport: viewport
+            //             });
+        
+        
+            //         });
+            //     });
+        
+            document.addEventListener('DOMContentLoaded', function () {
+
+
+                // console.log('{{pdfFile}}');
+                // const pdfFileName = '{{pdfFile}}';
+
+                // pdfjsLib.getDocument('{{pdfFile}}'.replace('/pdf_clip','..')).then((pdf) => {
+                pdfjsLib.getDocument('../static/upload/' + '{{ pdfFile }}').then((pdf) => {
+
+                    myState.pdf = pdf;
+                    render();
+
+                });
+
+
+                const formerClips = '{{ clips }}' ? JSON.parse('{{ clips|safe }}') : null;
+                const formerPosArray = '{{ posArray }}' ? JSON.parse('{{ posArray|safe }}') : null;
+                if (formerClips && formerPosArray) {
+                    document.getElementById('submitClips').disabled = false;
+                    // console.log('there are former clips');
+                    // console.log(formerClips);
+                    for (const x in formerPosArray) {
+                        console.log(formerClips[formerPosArray[x]]);
+                        const clipCon = document.getElementById('clipListScreen');
+                        const clipTable = document.getElementById('clipTable');
+                        const currentRange = (Math.ceil(formerClips[formerPosArray[x]]['minY'] / 600 * 100)) + '% to ' + (Math.ceil(formerClips[formerPosArray[x]]['maxY'] / 600 * 100)) + '%';
+                        const newRow = document.createElement('tr');
+                        const newPageData = document.createElement('td');
+                        newPageData.style.width = '75px';
+                        newPageData.innerHTML = formerClips[formerPosArray[x]]['pageNumber'];
+                        const newRangeData = document.createElement('td');
+                        newRangeData.style.width = '200px';
+                        if (formerClips[formerPosArray[x]]['minY'] == 0 && formerClips[formerPosArray[x]]['maxY'] == 600) {
+                            newRangeData.innerHTML = 'Entire Page';
+                        } else {
+                            newRangeData.innerHTML = currentRange;
+                        }
+                        const newSideData = document.createElement('td');
+                        newSideData.style.width = '75px';
+                        if (formerClips[formerPosArray[x]]['minX'] == null & formerClips[formerPosArray[x]]['manX'] == null) {
+                            newSideData.innerHTML = '';
+                        } else if (formerClips[formerPosArray[x]]['minX'] == 0) {
+                            newSideData.innerHTML = 'Left';
+                        } else {
+                            newSideData.innerHTML = 'Right';
+                        }
+                        newRow.appendChild(newPageData);
+                        newRow.appendChild(newSideData);
+                        newRow.appendChild(newRangeData);
+                        clipTable.appendChild(newRow);
+                    }
+                    myClips = formerClips;
+                    document.getElementById('clipsToSubmit').value = JSON.stringify(myClips);
+                    console.log(document.getElementById('clipsToSubmit').value);
+                }
+        
+                document.getElementById("line_container_1").onmousedown = function() { 
+                    mouseDown = true;
+                    lineDragged = "line1";
+                }
+                document.getElementById("line_container_2").onmousedown = function() { 
+                    mouseDown = true;
+                    lineDragged = "line2";
+                }
+                document.getElementById("line_container_3").onmousedown = function() { 
+                    mouseDown = true;
+                    lineDragged = "line3";
+                }
+                document.body.onmouseup = function() {
+                    mouseDown = false;
+                }
+        
+                const div = document.getElementById('pdf_screen');
+                const innerDiv = document.getElementById('pdf_container');
+                var rect = div.getBoundingClientRect(); 
+        
+                div.addEventListener('mousemove', function(event) {
+                    if (mouseDown) {
+                        var cursorY;
+                        var cursorX;
+                        
+                        if (event.clientY - rect.top < 3) {
+                            cursorY = 3;
+                        } else if (event.clientY - rect.top > maxYLimit + 3) {
+                            cursorY = maxYLimit + 3;
+                        } else {
+                            cursorY = event.clientY - rect.top;
+                        }
+
+                        if (event.clientX - rect.left < minXLimit + 12) {
+                            cursorX = minXLimit + 12;
+                        } else if (event.clientX - rect.left > maxXLimit + 12) {
+                            cursorX = maxXLimit + 12;
+                        } else {
+                            cursorX = event.clientX - rect.left;
+                        }
+
+                        // document.getElementById("cursorPos").innerHTML = lineDragged + " " + (cursorY - 3) + " " +  + (cursorX - 12 - minXLimit);
+                        if (lineDragged == "line1") {
+                            line1Pos = cursorY - 3;
+                            if (line1Pos < line2Pos) {
+                                document.getElementById("line_1").style.borderColor = "red";
+                                document.getElementById("line_1_cursor").style.borderColor = "red";
+                                document.getElementById("line_2").style.borderColor = "blue";
+                                document.getElementById("line_2_cursor").style.borderColor = "blue";
+                            } else if (line1Pos > line2Pos) {
+                                document.getElementById("line_1").style.borderColor = "blue";
+                                document.getElementById("line_1_cursor").style.borderColor = "blue";
+                                document.getElementById("line_2").style.borderColor = "red";
+                                document.getElementById("line_2_cursor").style.borderColor = "red";
+                            }
+                            document.getElementById("line_container_1").style.top = cursorY + "px";
+                        } else if (lineDragged == "line2") {
+                            line2Pos = cursorY - 3;
+                            if (line2Pos < line1Pos) {
+                                document.getElementById("line_2").style.borderColor = "red";
+                                document.getElementById("line_2_cursor").style.borderColor = "red";
+                                document.getElementById("line_1").style.borderColor = "blue";
+                                document.getElementById("line_1_cursor").style.borderColor = "blue";
+                            } else if (line2Pos > line1Pos) {
+                                document.getElementById("line_2").style.borderColor = "blue";
+                                document.getElementById("line_2_cursor").style.borderColor = "blue";
+                                document.getElementById("line_1").style.borderColor = "red";
+                                document.getElementById("line_1_cursor").style.borderColor = "red";
+                            }
+                            document.getElementById("line_container_2").style.top = cursorY + "px";
+                        } else if (lineDragged == "line3") {
+                            line3Pos = cursorX - 12 - minXLimit;
+                            document.getElementById("line_container_3").style.left = cursorX + "px";
+                        }
+                    }
+                });
+
+            document.getElementById('save_pos')
+                .addEventListener('click', (e) => {
+                    if (line1Pos != line2Pos) {
+                        saveThePage(false, null);
+                    }
+                });
+        
+            document.getElementById('save_page')
+                .addEventListener('click', (e) => {
+                    saveThePage(true, null);
+                });
+        
+            document.getElementById('save_left_pos')
+                .addEventListener('click', (e) => {
+                    if (line1Pos != line2Pos) {
+                        saveThePage(false, 'Left');
+                    }
+                });
+
+            document.getElementById('save_right_pos')
+                .addEventListener('click', (e) => {
+                    if (line1Pos != line2Pos) {
+                        saveThePage(false, 'Right');
+                    }
+                });
+
+            document.getElementById('save_left_page')
+                .addEventListener('click', (e) => {
+                    saveThePage(true, 'Left');
+                });
+
+            document.getElementById('save_right_page')
+                .addEventListener('click', (e) => {
+                    saveThePage(true, 'Right');
+                });
+
+            document.getElementById('go_previous')
+                .addEventListener('click', (e) => {
+                    if (myState.pdf == null || myState.currentPage == 1)
+                        return;
+        
+                    myState.currentPage -= 1;
+                    document.getElementById("current_page").value = myState.currentPage;
+                    render();
+                });
+        
+            document.getElementById('go_next')
+                .addEventListener('click', (e) => {
+                    if (myState.pdf == null || myState.currentPage > myState.pdf._pdfInfo.numPages)
+                        return;
+        
+                    myState.currentPage += 1;
+                    document.getElementById("current_page").value = myState.currentPage;
+                    render();
+                });
+        
+            document.getElementById('undoButton')
+                .addEventListener('click', (e) => {
+                    const tableRows = document.getElementById('clipTable').rows;
+                    if (Object.keys(myClips).length >= 1 && lastClipNum != null) {
+                        // console.log(tableRows);
+                        // console.log(tableRows.length);
+                        // console.log(tableRows[tableRows.length - 1]);
+                        tableRows[tableRows.length - 1].remove();
+                        if (Object.keys(myClips).length > 0) {
+                            const currentClipNo = Math.max(...Object.keys(myClips));
+                            delete myClips[currentClipNo];
+                        }
+                        document.getElementById('clipsToSubmit').value = JSON.stringify(myClips);
+                        console.log(document.getElementById('clipsToSubmit').value);
+                        lastClipNum = null;
+                        document.getElementById('undoButton').disabled = true;
+                        if (Object.keys(myClips).length == 0) {
+                            document.getElementById('submitClips').disabled = true;
+                        }
+                    }
+                });
+
+            document.getElementById('singlePage')
+                .addEventListener('click', (e) => {
+                    document.getElementById('singlePageButtons').style.display = "block";
+                    document.getElementById('doublePageButtons').style.display = "none";
+                    document.getElementById('line_container_3').style.display = "none";
+                });
+
+            document.getElementById('doublePage')
+                .addEventListener('click', (e) => {
+                    document.getElementById('singlePageButtons').style.display = "none";
+                    document.getElementById('doublePageButtons').style.display = "block";
+                    document.getElementById('line_container_3').style.display = "block";
+                    document.getElementById('line_container_3').style.left = Math.floor((maxXLimit - minXLimit) / 2) + 12;
+                    line3Pos = Math.floor((maxXLimit - minXLimit) / 2);
+                });
+                
+            document.getElementById('current_page')
+                .addEventListener('keypress', (e) => {
+                    if (myState.pdf == null) return;
+        
+                    // Get key code
+                    var code = (e.keyCode ? e.keyCode : e.which);
+        
+                    // If key code matches that of the Enter key
+                    if (code == 13) {
+                        var desiredPage = document.getElementById('current_page').valueAsNumber;
+        
+                        if (desiredPage >= 1 && desiredPage <= myState.pdf._pdfInfo.numPages) {
+                            myState.currentPage = desiredPage;
+                            document.getElementById("current_page").value = desiredPage;
+                            render();
+                        }
+                    }
+                });
+
+            });
+
+
+
+            
+        </script>
+
+{% endblock %}
+{% block body %}
+    <div id="clipScreen">
+        <div id="my_pdf_viewer">
+            <div style="padding-bottom: 10px;">
+                <input type="radio" id="singlePage" name="pageType" value="singlePage" checked>
+                <label for="single">Single Page</label>
+                <input type="radio" id="doublePage" name="pageType" value="doublePage">
+                <label for="double">Double Page</label>
+            </div>
+            <div id="inline_container">
+                <div id="pdf_screen">
+                    <div id="canvas_container">
+                        <canvas id="pdf_renderer"></canvas>
+                    </div>
+                    <div id="line_container_1">
+                        <div id="line_1_cursor"></div>
+                        <div id="line_1"></div>
+                    </div>
+                    <div id="line_container_2">
+                        <div id="line_2_cursor"></div>
+                        <div id="line_2"></div>
+                    </div>
+                    <div id="line_container_3">
+                        <div id="line_3_cursor"></div>
+                        <div id="line_3"></div>
+                    </div>
+                </div>
+    
+            </div>
+            
+            <div style="display:inline-flex">
+                <div id="navigation_controls" style="padding-right:50px;">
+                    <button id="go_previous">Previous</button>
+                    <input id="current_page" value="1" type="number" style="width:100px;"/>
+                    <label>/ {{pages}}</label>
+                    <button id="go_next">Next</button>
+                </div>
+                <div id="singlePageButtons">
+                    <button id="save_pos">Save Position</button>
+                    <button id="save_page">Entire Page</button>
+                </div>
+                <div id="doublePageButtons" style="display:none;">
+                    <div style="display:inline-flex;">
+                        <div style="display:block;">
+                            <button id="save_left_pos" style="display:block;width:150px;">Save Left Position</button>
+                            <button id="save_left_page" style="display:block;width:150px;">Entire Left Page</button>        
+                        </div>
+                        <div style="display:block;">
+                            <button id="save_right_pos" style="display:block;width:150px;">Save Right Position</button>
+                            <button id="save_right_page" style="display:block;width:150px;">Entire Right Page</button>                            
+                        </div>
+                    </div>
+                </div>
+                <div id="undoButtonContainer" style="padding-left:5px;">
+                    <button id="undoButton" disabled="true">Undo Previous</button>
+                </div>
+            </div>
+
+            <!-- <p id="cursorPos">Cursor position</p> -->
+
+        </div>
+        <div>
+            <div>
+                <h3>Clips collected:</h3>
+                <div id="clipListScreen">
+                    <table id="clipTable">
+                        <tr><td style='width:75px;font-weight: bold;'>Page</td><td style='width:75px;font-weight: bold;'>Side</td><td style='width:200px;font-weight: bold;'>Clip Range</td></tr>
+                    </table>
+                </div>
+                <form id="clipForm" method="post" action="{% url 'review' %}">
+                    {% csrf_token %}
+                    <input id="clipsToSubmit" type="hidden" name="clips">
+                    <input id="submitClips" type="submit" value="Finished!" disabled="true">
+                </form>               
+            </div>
+        </div>
+    </div>
+
+
+
+{% endblock %}
+

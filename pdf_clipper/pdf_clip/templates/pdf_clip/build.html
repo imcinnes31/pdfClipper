@@ -1,0 +1,454 @@
+{% extends "pdf_clip/layout.html" %}
+
+{% block head %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.3/jspdf.min.js"></script>    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.0.943/pdf.min.js"></script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <style>
+         .progress {
+            margin: 50px 100px;
+            border: 1px solid black;
+         }
+         /* .progressDiv {
+            display: none;
+         } */
+    </style>
+
+    <div id="app"></div>
+
+    <script type="text/babel">
+        function App() {
+            const [clipData, setClipData] = React.useState(null);
+            const [fileData, setFileData] = React.useState(null);
+            const [posArray, setPosArray] = React.useState(null);
+            const [pdfRead, setPdfRead] = React.useState(null);
+            const [pdfPages, setPdfPages] = React.useState(null);
+            const [pdfImages, setPdfImages] = React.useState(null);
+            const [processDone, setProcessDone] = React.useState(false);
+            // const [maxPageWidth, setMaxPageWidth] = React.useState(0);
+            const [maxPageHeight, setMaxPageHeight] = React.useState(0);
+
+            const newResolution = 2;
+
+            // class ProgressBar extends React.Component {
+
+            //     componentDidMount() {
+            //         // console.log(clipData);
+            //         // console.log(fileData);
+            //         // console.log(pdfImages);
+            //         if (processDone == false) {
+            //             if (clipData && fileData && pdfImages && Object.keys(pdfImages).length == fileData['positionArray'].length) {
+            //                 //BEGIN
+            //                 const posArray = fileData['positionArray'];
+
+            //                 // console.log(fileData);
+
+            //                 const hSize = fileData['maxPageWidth'];
+            //                 const vSize = fileData['maxPageHeight'];
+
+            //                 // console.log(hSize);
+            //                 // console.log(vSize);
+
+            //                 const pdfWrite = new jsPDF({unit: 'px',format: [hSize, vSize]});
+            //                 pdfWrite.setFont("courier");
+            //                 pdfWrite.setFontSize(12);
+
+            //                 var currentWriteHeight = 0;
+
+            //                 for (const x in posArray) {
+            //                     // console.log(posArray[x]);
+            //                     // console.log(pdfImages[posArray[x]]);
+            //                     // console.log(clipData[posArray[x]]['note']);
+
+            //                     const canvas2 = document.createElement('canvas');
+
+            //                     canvas2.width = pdfImages[posArray[x]]['width'];
+            //                     canvas2.height = pdfImages[posArray[x]]['height'];
+
+            //                     const ctx = canvas2.getContext("2d");
+            //                     // console.log(pdfImages[posArray[x]]);
+            //                     ctx.putImageData(pdfImages[posArray[x]], 0, 0);
+
+            //                     if ((clipData[posArray[x]]['note'].length > 0 && (currentWriteHeight + canvas2.height + 16) > vSize) || (clipData[posArray[x]]['note'].length == 0 && (currentWriteHeight + canvas2.height) > vSize)) {
+            //                         pdfWrite.addPage({format: [hSize, vSize]});
+            //                         currentWriteHeight = 0;
+            //                     }
+
+            //                     if (clipData[posArray[x]]['note'].length > 0) {
+            //                         pdfWrite.text(clipData[posArray[x]]['note'], 0, currentWriteHeight + 8);
+            //                         currentWriteHeight += 16;
+            //                     }
+
+            //                     pdfWrite.addImage(canvas2, 'PNG', 0, currentWriteHeight, hSize, canvas2.height);
+            //                     currentWriteHeight += canvas2.height;
+                                    
+            //                     const percentDone = Math.floor(x / posArray.length * 100);
+            //                     console.log(percentDone);
+            //                     document.getElementById('percent').innerHTML = percentDone;
+            //                     // USE THIS TO UPDATE PROGRESS BAR, ALSO IN GET IMAGES
+
+            //                     canvas2.remove();
+            //                 }
+
+            //                 setProcessDone(true);
+            //                 document.getElementById('percent').innerHTML = 100;
+            //                 console.log(100);
+
+            //                 // FINAL PRODUCT GOES HERE
+            //                 // window.open(pdfWrite.output('bloburl'), '_blank');
+            //                 // pdfWrite.save();
+
+            //                 //END
+            //             }
+            //         }
+
+            //     }
+
+            //     render() {
+            //         return (
+            //             <h1 id="progress">0</h1>
+            //         );
+            //     }
+            // }
+
+            React.useEffect(() => {
+
+                fetch("http://127.0.0.1:8000/pdfclip/api/files?fileId={{fileId}}")
+                .then(res => res.json())
+                .then(
+                    (result) => {
+                        setFileData(result[0]);
+                    },
+                    (error) => {
+                        console.log(error);
+                    }
+                )
+
+                fetch("http://127.0.0.1:8000/pdfclip/api/clips?fileId={{fileId}}")
+                .then(res => res.json())
+                .then(
+                    (result) => {
+                        var clipDataDict = {};
+                        for (const x in result) {
+                            clipDataDict[result[x]['clipNumber']] = {};
+                            // clipDataDict[result[x]['clipNumber']]['clipNumber'] = result[x]['clipNumber'];
+                            clipDataDict[result[x]['clipNumber']]['pageNumber'] = result[x]['pageNumber'];
+                            clipDataDict[result[x]['clipNumber']]['minY'] = result[x]['minY'];
+                            clipDataDict[result[x]['clipNumber']]['maxY'] = result[x]['maxY'];
+                            clipDataDict[result[x]['clipNumber']]['minX'] = result[x]['minX'];
+                            clipDataDict[result[x]['clipNumber']]['maxX'] = result[x]['maxX'];
+                            clipDataDict[result[x]['clipNumber']]['note'] = result[x]['note'];
+                        }
+                        setClipData(clipDataDict);
+                    },
+                    (error) => {
+                        console.log(error);
+                    }
+                )
+
+
+
+            }, []);
+
+            React.useEffect(() => {
+                if (fileData && clipData) {
+                    setMaxPageHeight(fileData['maxPageHeight']);
+                    setPosArray(JSON.parse(fileData['positionArray']));
+                    const fileName = '../static/upload/' + fileData['fileName'];
+                    pdfjsLib.getDocument(fileName).then((pdf) => {
+                        setPdfRead(pdf);
+                    });
+                }
+            }, [clipData, fileData]);
+
+            React.useEffect(() => {
+                if(pdfRead && fileData && clipData) {
+                    document.getElementById('progressMessage').innerHTML = 'Getting info from PDF file...';
+                    for (const x in clipData) {
+                        pdfRead.getPage(clipData[x]['pageNumber']).then((page) => {
+
+                            // if (page.view[2] - page.view[0] > maxPageWidth) {
+                            //     setMaxPageWidth(page.view[2] - page.view[0]);
+                            // }
+
+                            // if ((page.view[3] - page.view[1]) > maxPageHeight) {
+                            //     setMaxPageHeight((page.view[3] - page.view[1]));
+                            // }
+
+                            let pdfProgressPercent = Math.floor(x / posArray.length * 100);
+
+                            if (document.getElementById('pdfProgress')) {
+                                document.getElementById('pdfPercent').innerHTML = ('Progress: ' + pdfProgressPercent + '%');
+                                document.getElementById('pdfProgressBar').style.width = (pdfProgressPercent + '%');
+                            }
+                            // setPdfPages(prev => ( { ...prev , [clipData[x]['clipNumber']]: page } ));
+                            setPdfPages(prev => ( { ...prev , [x]: page } ));
+                        });
+                    }
+
+                    // for (const x in clipData) {
+                    //     pdfRead.getPage(clipData[x]['pageNumber']).then((page) => {
+                    //         const newScale = Math.floor(maxPageHeight / (page.view[3] - page.view[1]));
+                    //         console.log("new scale " + newScale);
+                    //         if (clipData[x]['minX'] == null && clipData[x]['maxX']) {
+                    //             if (page.view[2] - page.view[0] > maxPageWidth) {
+                    //                 setMaxPageWidth(page.view[2] - page.view[0]);
+                    //             }
+                    //         } else {
+                    //             if ((clipData[x]['maxX'] - clipData[x]['minX']) * newScale > maxPageWidth) {
+                    //                 setMaxPageWidth((clipData[x]['maxX'] - clipData[x]['minX']) * newScale);
+                    //             }
+                    //         }
+                    //     });
+                    // }
+
+                    if (document.getElementById('pdfProgress')) {
+                        document.getElementById('pdfPercent').innerHTML = 'Progress: 100%';
+                        document.getElementById('pdfProgressBar').style.width = '100%';
+                    }
+
+                }
+            }, [pdfRead]);
+
+            React.useEffect(() => {
+                if (clipData && fileData && pdfPages && Object.keys(pdfPages).length == posArray.length) {
+                    document.getElementById('progressMessage').innerHTML = 'Reading from PDF file...';
+
+                    const maxLineLength = Math.floor((fileData.maxPageWidth - 10) / 5.4);
+                    const origPageScale = fileData.maxPageHeight / 600;
+
+                    for (const clip in clipData) {
+                        let lines = [];
+                        let currentLineLength = 0;
+                        let currentLine = '';
+                        if (clipData[clip]['note'].length > 0) {
+                            const noteWords = clipData[clip]['note'].split(' ');
+                            for (const note in noteWords) {
+                                if (currentLineLength + noteWords[note].length + 1 > maxLineLength){
+                                    lines.push(currentLine);
+                                    currentLine = '';
+                                    currentLineLength = 0;
+                                }
+                                currentLineLength += noteWords[note].length + 1;
+                                currentLine += noteWords[note] + ' ';
+                            }
+                            lines.push(currentLine);
+                            clipData[clip]['noteLines'] = lines;
+                        }
+                        const totalSize = lines.length * 16 + (lines.length > 0 ? 4 : 0) + ((clipData[clip]['maxY'] - clipData[clip]['minY']) * origPageScale);
+                        // console.log(totalSize);
+                        if (totalSize > maxPageHeight) {
+                            setMaxPageHeight(totalSize);
+                        }
+                    }
+
+
+                    for (const x in pdfPages) {
+                        // console.log(pdfPages[x]);
+
+                        const currentMinY = clipData[x]['minY'];
+                        const currentMaxY = clipData[x]['maxY'];
+                        const currentMinX = clipData[x]['minX'];
+                        const currentMaxX = clipData[x]['maxX'];
+
+                        const canvas1 = document.createElement('canvas');
+                        const ctx = canvas1.getContext("2d", { willReadFrequently: true });
+
+                        const minY = currentMinY * (pdfPages[x].view[3] - pdfPages[x].view[1]) / 600;
+                        const maxY = currentMaxY * (pdfPages[x].view[3] - pdfPages[x].view[1]) / 600;
+                        let minX = null; 
+                        let maxX = null;
+                        if (currentMinX != null && currentMaxX != null) {
+                            minX = currentMinX * (pdfPages[x].view[3] - pdfPages[x].view[1]) / 600;
+                            maxX = currentMaxX * (pdfPages[x].view[3] - pdfPages[x].view[1]) / 600;
+                        }
+
+                        const picHeight = maxY - minY;
+                        let innerScale;
+                        const heightScale = Math.floor(fileData.maxPageHeight / (pdfPages[x].view[3] - pdfPages[x].view[1]));
+                        const widthScale = Math.floor(fileData.maxPageWidth / (pdfPages[x].view[2] - pdfPages[x].view[0]));
+                        if (widthScale > heightScale) {
+                            innerScale = widthScale;
+                        } else {
+                            innerScale = heightScale;
+                        }
+                        const viewport = pdfPages[x].getViewport(newResolution * innerScale);
+
+                        canvas1.width = viewport.width;
+                        canvas1.height = viewport.height;
+
+                        pdfPages[x].render({
+                            canvasContext: ctx,
+                            viewport: viewport
+                        }).then((page) => {
+
+                            if (minX == null && maxX == null) {
+                                setPdfImages(prev => ( { ...prev , [x]: ctx.getImageData(0, minY * newResolution * innerScale, viewport.width, picHeight * newResolution * innerScale) } ));
+                            } else {
+                                setPdfImages(prev => ( { ...prev , [x]: ctx.getImageData(minX * newResolution * innerScale, minY * newResolution * innerScale, (maxX - minX) * newResolution * innerScale, picHeight * newResolution * innerScale) } ));
+                            }
+                            // setPdfImages(prev => ( { ...prev , [clipData[x]['clipNumber']]: ctx.getImageData(0, minY * newResolution, viewport.width, picHeight * newResolution) } ));
+                        });
+
+                        let readProgressPercent = Math.floor(x / posArray.length * 100);
+
+                        if (document.getElementById('readProgress')) {
+                            document.getElementById('readPercent').innerHTML = ('Progress: ' + readProgressPercent + '%');
+                            document.getElementById('readProgressBar').style.width = (readProgressPercent + '%');
+                        }
+
+                        // console.log('reading');
+
+                        canvas1.remove();
+                    }
+
+                    if (document.getElementById('readProgress')) {
+                        document.getElementById('readPercent').innerHTML = 'Progress: 100%';
+                        document.getElementById('readProgressBar').style.width = '100%';
+                    }
+
+                }
+            }, [pdfPages]);
+
+            React.useEffect(() => {
+                if(clipData && fileData && pdfImages && Object.keys(pdfImages).length == posArray.length) {
+
+                    // console.log(fileData);
+                    // console.log(maxPageWidth);
+                    // console.log(maxPageHeight);
+
+                    const hSize = fileData.maxPageWidth;
+                    console.log(hSize);
+                    const vSize = maxPageHeight;
+                    // console.log('maxPageWidth = ' + maxPageWidth);
+                    // console.log('maxPageHeight = ' + maxPageHeight);
+
+                    const pdfWrite = new jsPDF({unit: 'px',format: [hSize, vSize]});
+                    pdfWrite.setFont("courier");
+                    pdfWrite.setFontSize(12);
+
+                    var currentWriteHeight = 0;
+
+                    document.getElementById('progressMessage').innerHTML = 'Writing new PDF file...';
+
+                    for (const x in posArray) {
+                        // console.log(posArray[x]);
+                        // console.log(pdfImages[posArray[x]]);
+                        // console.log(clipData[posArray[x]]['note']);
+
+                        const canvas2 = document.createElement('canvas');
+
+                        canvas2.width = pdfImages[posArray[x]]['width'];
+                        canvas2.height = pdfImages[posArray[x]]['height'];
+
+                        const ctx = canvas2.getContext("2d", { willReadFrequently: true });
+                        // console.log(pdfImages[posArray[x]]);
+                        ctx.putImageData(pdfImages[posArray[x]], 0, 0);
+
+                        // let innerScale;
+                        // const heightScale = Math.floor(maxPageHeight / (pdfPages[x].view[3] - pdfPages[x].view[1]));
+                        // const widthScale = Math.floor(maxPageWidth / (pdfPages[x].view[2] - pdfPages[x].view[0]));
+                        // if (widthScale > heightScale) {
+                        //     innerScale = widthScale;
+                        // } else {
+                        //     innerScale = heightScale;
+                        // }
+
+                        if ((clipData[posArray[x]]['note'].length > 0 && (currentWriteHeight + (canvas2.height / newResolution) + (clipData[posArray[x]]['noteLines'].length * 16) + 4) > vSize) || (clipData[posArray[x]]['note'].length == 0 && (currentWriteHeight + canvas2.height / newResolution) > vSize)) {
+                            pdfWrite.addPage({format: [hSize, vSize]});
+                            currentWriteHeight = 0;
+                        }
+
+                        if (clipData[posArray[x]]['note'].length > 0) {
+                            currentWriteHeight += 4
+                            for (const line in clipData[posArray[x]]['noteLines']) {
+                                pdfWrite.text(clipData[posArray[x]]['noteLines'][line], 5, currentWriteHeight + 8);
+                                currentWriteHeight += 16;
+                            }
+
+                        }
+
+
+                        pdfWrite.addImage(canvas2, 'PNG', 0, currentWriteHeight, (canvas2.width / newResolution), (canvas2.height / newResolution));
+                        currentWriteHeight += (canvas2.height / newResolution);
+                            
+                        let writeProgressPercent = Math.floor(x / posArray.length * 100);
+
+                        if (document.getElementById('writeProgress')) {
+                            document.getElementById('writePercent').innerHTML = ('Progress: ' + writeProgressPercent + '%');
+                            document.getElementById('writeProgressBar').style.width = (writeProgressPercent + '%');
+                        }
+
+                        // console.log('writing');
+
+                        canvas2.remove();
+                    }
+
+                    if (document.getElementById('writeProgress')) {
+                        document.getElementById('writePercent').innerHTML = 'Progress: 100%';
+                        document.getElementById('writeProgressBar').style.width = '100%';
+                    }
+
+                    document.getElementById('pdfPercent').innerHTML = 'Progress: 100%';
+                    document.getElementById('pdfProgressBar').style.width = '100%';
+                    document.getElementById('readPercent').innerHTML = 'Progress: 100%';
+                    document.getElementById('readProgressBar').style.width = '100%';
+                    document.getElementById('writePercent').innerHTML = 'Progress: 100%';
+                    document.getElementById('writeProgressBar').style.width = '100%';
+                    document.getElementById('progressMessage').innerHTML = 'Your PDF file is ready for download!';
+
+                    // FINAL PRODUCT GOES HERE
+                    window.open(pdfWrite.output('bloburl'), '_blank');
+                    // pdfWrite.save();
+
+                    // setProcessDone(true);
+                    
+                }
+            }, [pdfImages]);
+
+            return (
+                <div>
+                    
+                </div>
+            );
+
+        }
+
+        ReactDOM.render(<App />, document.querySelector("#app"));
+    </script>
+
+    <title>My PDF Viewer</title>
+{% endblock %}
+{% block body %}
+    <div style="text-align: center;">
+        <h1 id="progressMessage"></h1>
+        <div class="progressDiv" id="pdfProgress">
+            <div class="progress">
+                <div id="pdfProgressBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <p id="pdfPercent">Progress: 0%</p>
+        </div>
+        <div class="progressDiv" id="readProgress">
+            <div class="progress">
+                <div id="readProgressBar" class="progress-bar bg-warning" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <p id="readPercent">Progress: 0%</p>
+        </div>
+        <div class="progressDiv" id="writeProgress">
+            <div class="progress">
+                <div id="writeProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <p id="writePercent">Progress: 0%</p>
+        </div>
+        <form id="backToReview" method="post" action="{% url 'review' %}">
+            {% csrf_token %}
+            <input type="submit" value="Redo configuration">
+        </form>
+    </div>
+{% endblock %}
