@@ -9,7 +9,6 @@ router.register(r'files', views.FileViewSet, 'fileView')
 urlpatterns = [
     path("clip", views.clip, name="clip"),
     path("review", views.review, name="review"),
-    path("create", views.create, name="create"),
     path("build", views.build, name="build"),
     path("test", views.test, name="test"),
     path("", views.upload, name="upload"),

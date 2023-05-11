@@ -1,15 +1,15 @@
 from django.shortcuts import render
 from django.http import FileResponse, HttpResponse, StreamingHttpResponse
-from pdf2image import convert_from_path
+# from pdf2image import convert_from_path
 from PyPDF2 import PdfReader, PdfWriter
-from PIL import Image
-from reportlab.pdfgen.canvas import Canvas
-from django.views.decorators.http import condition
+# from PIL import Image
+# from reportlab.pdfgen.canvas import Canvas
+# from django.views.decorators.http import condition
 
-from django.utils.timezone import now
+# from django.utils.timezone import now
 
-from django.forms.models import model_to_dict
-from django.core.serializers import serialize
+# from django.forms.models import model_to_dict
+# from django.core.serializers import serialize
 from django.core import serializers
 
 from django.template import Context, Template
@@ -260,11 +260,6 @@ def review(request):
             # "fileJson": fileJson,
         })
 
-def create(request):
-    return render(request, "pdf_clip/build.html", {
-        "fileId": request.session['pdfFiles'],
-    })
-
 def build(request):
     currentFile = File.objects.get(id=request.session['pdfFiles'])
     # add new file data request, put "false" in if no maxY - minY = 600 with a note
@@ -292,10 +287,13 @@ def build(request):
         #     currentClip.save()
     currentFile.positionArray = simplejson.dumps(positionArray)
 
+    #only inspect pages in clips given
     currentClips = Clip.objects.filter(fileId = currentFile)
     pdf = PdfReader("pdf_clip/static/upload/" + currentFile.fileName,"rb")
     maxPageHeight = 0
     maxPageWidth = 0
+    # use "getPage()" for pages in clips
+    # ignore if page in "pages to ignore" array
     for page in pdf.pages:
         if page.mediabox[3] - page.mediabox[1] > maxPageHeight:
             maxPageHeight = page.mediabox[3] - page.mediabox[1]

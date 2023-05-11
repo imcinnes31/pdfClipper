@@ -4,9 +4,9 @@ from django.db import models
 class File(models.Model):
     fileName = models.CharField(max_length=128)
     positionArray = models.JSONField(null=True, blank=True)
-    pages=models.IntegerField()
-    maxPageWidth = models.FloatField(default=0)
-    maxPageHeight = models.FloatField(default=0)
+    pages = models.IntegerField(null=True)
+    maxPageWidth = models.FloatField(null=True, default=0)
+    maxPageHeight = models.FloatField(null=True, default=0)
     date_uploaded = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -14,10 +14,10 @@ class File(models.Model):
     
 class Clip(models.Model):
     fileId = models.ForeignKey(File, on_delete=models.CASCADE, related_name="relatedFile", default=0)
-    pageNumber = models.IntegerField()
-    clipNumber = models.IntegerField()
-    minY = models.IntegerField()
-    maxY = models.IntegerField()
+    pageNumber = models.IntegerField(null=True)
+    clipNumber = models.IntegerField(null=True)
+    minY = models.IntegerField(null=True)
+    maxY = models.IntegerField(null=True)
     minX = models.IntegerField(null=True)
     maxX = models.IntegerField(null=True)
     note = models.CharField(max_length=512, blank=True)
