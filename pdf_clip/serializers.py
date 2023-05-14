@@ -1,7 +1,12 @@
 # serializers.py
 from rest_framework import serializers
 
-from .models import Clip, File
+from . import Clip, File, Position
+
+class PosSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Position
+        fields = ('fileId', 'arrayNumber', 'posNumber')
 
 class ClipSerializer(serializers.ModelSerializer):
     class Meta:

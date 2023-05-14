@@ -22,8 +22,8 @@ import time
 import math
 
 from rest_framework import viewsets, generics
-from .serializers import ClipSerializer, FileSerializer
-from .models import Clip, File
+from .serializers import ClipSerializer, FileSerializer, PosSerializer
+from .models import Clip, File, Position
 
 class ClipViewSet(viewsets.ModelViewSet):
     queryset = Clip.objects.all().order_by('id')
@@ -31,6 +31,10 @@ class ClipViewSet(viewsets.ModelViewSet):
 
 class FileViewSet(viewsets.ModelViewSet):
     queryset = File.objects.all().order_by('id')
+    serializer_class = FileSerializer
+
+class PosViewSet(viewsets.ModelViewSet):
+    queryset = Position.objects.all().order_by('id')
     serializer_class = FileSerializer
 
 class ClipViewSet2(generics.ListAPIView):
@@ -45,6 +49,13 @@ class FileViewSet2(generics.ListAPIView):
     serializer_class = FileSerializer
     def get_queryset(self):
         queryset = File.objects.filter(id=self.request.query_params.get('fileId'))
+        return queryset
+    
+class PosViewSet2(generics.ListAPIView):
+    # queryset = File.objects.all().order_by('id')
+    serializer_class = PosSerializer
+    def get_queryset(self):
+        queryset = Position.objects.filter(id=self.request.query_params.get('fileId'))
         return queryset
 
 # Create your views here.

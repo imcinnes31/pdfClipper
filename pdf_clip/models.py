@@ -25,3 +25,10 @@ class Clip(models.Model):
     def __str__(self):
         return f"{self.fileId.fileName}, clipNumber: {self.clipNumber}, page: {self.pageNumber}"
     
+class Position(models.Model):
+    fileId = models.ForeignKey(File, on_delete=models.CASCADE, related_name="arrayRelatedFile", default=0)
+    arrayNumber = models.IntegerField(null=True)
+    posNumber = models.IntegerField(null=True)
+
+    def __str__(self):
+        return f"{self.fileId.fileName}, posNumber: {self.posNumber}"

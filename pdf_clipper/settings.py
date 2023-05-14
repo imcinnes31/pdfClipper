@@ -79,14 +79,14 @@ WSGI_APPLICATION = 'pdf_clipper.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pdfclipper_database',
-        'USER': 'root',
-        'PASSWORD': 'Donkey69',
-        'HOST': '127.0.0.1',
+        'ENGINE': 'mysql.connector.django',
+        'NAME': 'heroku_cd4d6a185aa1464',
+        'USER': 'b475f50424156e',
+        'PASSWORD': '59700f56',
+        'HOST': 'us-cdbr-east-06.cleardb.net',
         'PORT': '3306',
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+            "use_pure": True
         }
     }
 }
