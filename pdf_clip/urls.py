@@ -5,6 +5,7 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 router.register(r'clips', views.ClipViewSet, 'clipView')
 router.register(r'files', views.FileViewSet, 'fileView')
+router.register(r'pos', views.PosViewSet, 'posView')
 
 urlpatterns = [
     path("clip", views.clip, name="clip"),
@@ -15,6 +16,7 @@ urlpatterns = [
 
     path("api/files", views.FileViewSet2.as_view(), name='fileView'),
     path("api/clips", views.ClipViewSet2.as_view(), name='clipView'),
+    path("api/pos", views.PosViewSet2.as_view(), name='posView'),
     
     path("api", include(router.urls)),
     path("api-auth", include('rest_framework.urls', namespace='rest_framework')),

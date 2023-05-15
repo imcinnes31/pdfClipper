@@ -3,7 +3,6 @@ from django.db import models
 # Create your models here.
 class File(models.Model):
     fileName = models.CharField(max_length=128)
-    positionArray = models.JSONField(null=True, blank=True)
     pages = models.IntegerField(null=True)
     maxPageWidth = models.FloatField(null=True, default=0)
     maxPageHeight = models.FloatField(null=True, default=0)

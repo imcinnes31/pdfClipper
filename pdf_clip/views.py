@@ -52,15 +52,18 @@ class FileViewSet2(generics.ListAPIView):
         return queryset
     
 class PosViewSet2(generics.ListAPIView):
-    # queryset = File.objects.all().order_by('id')
+    # queryset = Position.objects.all().order_by('id')
     serializer_class = PosSerializer
     def get_queryset(self):
-        queryset = Position.objects.filter(id=self.request.query_params.get('fileId'))
+        queryset = Position.objects.filter(fileId=self.request.query_params.get('fileId')).order_by('arrayNumber')
         return queryset
 
 # Create your views here.
 
 def upload(request):
+    print(File.objects.all())
+    print(Clip.objects.all())
+    print(Position.objects.all())
     if request.method == 'POST':
         if 'myfile' in request.FILES:
             myfile = request.FILES['myfile']
@@ -84,8 +87,14 @@ def upload(request):
         elif 'clips' in request.POST:
             positionArray = simplejson.loads(request.POST['posArray'])
             currentFile = File.objects.get(id=request.session['pdfFiles'])
-            currentFile.positionArray = simplejson.dumps(positionArray)
-            currentFile.save()
+            delPos = Position.objects.filter(fileId = currentFile)
+            delPos.delete()
+            for currentPos in positionArray:
+                pos = Position(fileId=currentFile,
+                    arrayNumber = positionArray.index(currentPos),
+                    posNumber = currentPos,
+                    )
+                pos.save()
             if request.POST['delArray']:
                 delArray = simplejson.loads(request.POST['delArray'])
                 delClips = Clip.objects.filter(clipNumber__in=delArray, fileId = currentFile)
@@ -161,6 +170,9 @@ def clip(request):
 
 
 def review(request):
+    # print(File.objects.all())
+    # print(Clip.objects.all())
+    # print(Position.objects.all())
     # clips = request.POST['clips'].split('\t')
     # print(request.session['pdfFiles'])
     # currentFile = File.objects.get(id=request.session['pdfFiles'])
@@ -170,8 +182,8 @@ def review(request):
     #         minY=clipData[1], maxY=clipData[2],note='')
     #     currentClip.save()
     
-    # print(request.POST['clips'])
     if request.method == 'POST':
+        print(request.POST['clips'])
         currentFile = File.objects.get(id=request.session['pdfFiles'])
         if 'clips' in request.POST:
             formerClips = Clip.objects.filter(fileId=currentFile)
@@ -228,22 +240,34 @@ def review(request):
         # notesJson = simplejson.dumps(notes)
         # print(clipData)
         posArray = []
-        if currentFile.positionArray == None:
+        currentPosArray = Position.objects.filter(fileId=currentFile).order_by('arrayNumber')
+        if currentPosArray.count() == 0:
             if 'clips' in request.POST:
                 for clip in requestClips:
+                    pos = Position(fileId=currentFile,
+                        arrayNumber = int(clip),
+                        posNumber = int(clip),
+                    )
+                    pos.save()
                     posArray.append(int(clip))
         else:
-            posArray = simplejson.loads(currentFile.positionArray)
+            for pos in currentPosArray:
+                posArray.append(int(pos.posNumber))
             if 'clips' in request.POST:
                 for clip in requestClips:
                     if int(clip) not in posArray:
+                        print('adding new pos')
+                        print(int(clip))
                         posArray.append(int(clip))
-            currentFile.positionArray = simplejson.dumps(posArray)
-            currentFile.save()
+                        pos = Position(fileId=currentFile,
+                            arrayNumber = int(clip),
+                            posNumber = int(clip),
+                        )
+                        pos.save()
 
         # print(posArray)
         positionArray = simplejson.dumps(posArray)
-        # print(positionArray)
+        print(positionArray)
         # fileData = serializers.serialize("json", File.objects.get(id=request.session['pdfFiles']))
         # clipData = serializers.serialize("json", Clip.objects.filter(fileId = currentFile))
         clipData = Clip.objects.filter(fileId = currentFile).values()
@@ -296,7 +320,14 @@ def build(request):
         # elif (clip['note'] != currentClip['note']):
         #     currentClip['note'] = clip['note']
         #     currentClip.save()
-    currentFile.positionArray = simplejson.dumps(positionArray)
+    delPos = Position.objects.filter(fileId = currentFile)
+    delPos.delete()
+    for currentPos in positionArray:
+        pos = Position(fileId=currentFile,
+            arrayNumber = positionArray.index(currentPos),
+            posNumber = currentPos,
+            )
+        pos.save()
 
     #only inspect pages in clips given
     currentClips = Clip.objects.filter(fileId = currentFile)

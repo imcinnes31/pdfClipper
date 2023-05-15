@@ -152,6 +152,23 @@
                     }
                 )
 
+                fetch("http://127.0.0.1:8000/pdfclip/api/pos?fileId={{fileId}}")
+                .then(res => res.json())
+                .then(
+                    (result) => {
+                        var apiPosArray = [];
+                        for (const x in result) {
+                            console.log(result[x]['posNumber']);
+                            apiPosArray.push(result[x]['posNumber']);
+                            console.log(apiPosArray);
+                        }
+                        setPosArray(apiPosArray);
+                    },
+                    (error) => {
+                        console.log(error);
+                    }
+                )
+
 
 
             }, []);
@@ -159,7 +176,6 @@
             React.useEffect(() => {
                 if (fileData && clipData) {
                     setMaxPageHeight(fileData['maxPageHeight']);
-                    setPosArray(JSON.parse(fileData['positionArray']));
                     const fileName = '../static/upload/' + fileData['fileName'];
                     pdfjsLib.getDocument(fileName).then((pdf) => {
                         setPdfRead(pdf);
