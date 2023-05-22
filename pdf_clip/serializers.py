@@ -11,7 +11,7 @@ class ClipSerializer(serializers.ModelSerializer):
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
-        fields = ('id', 'fileName', 'positionArray', 'maxPageHeight', 'maxPageWidth')
+        fields = ('id', 'fileName', 'date_uploaded', 'pages', 'maxPageHeight', 'maxPageWidth')
 
 class PosSerializer(serializers.ModelSerializer):
     class Meta:
