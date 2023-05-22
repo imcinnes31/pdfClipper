@@ -30,7 +30,8 @@ SECRET_KEY = 'django-insecure-@z*cz%$fda0b@^=5c&*35mii&mor3=%w@clpf&x8!=v7h)od4n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['https://imcinnes31-pdfclipper.herokuapp.com/']
 
 
 # Application definition
