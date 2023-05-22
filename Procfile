@@ -1,3 +1,1 @@
-web: python manage.py runserver 0.0.0.0:\$PORT
-python manage.py collectstatic --noinput
-manage.py migrate
+web: python manage.py runserver 207.161.191.9:\$PORT
