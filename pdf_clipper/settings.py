@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'django-heroku',
 ]
 
 MIDDLEWARE = [
@@ -97,7 +96,7 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME'),
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASS'),
-        'HOST': 'us-cdbr-east-06.cleardb.net',
+        'HOST': os.environ.get('DB_HOST'),
         'PORT': '3306',
         'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,"use_pure": True},
     }
@@ -152,5 +151,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = 'pdf_clip/static/upload/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'pdf_clip/static/upload')
 
-import django_heroku
-django_heroku.settings(locals())
+# import django_heroku
+# django_heroku.settings(locals())
