@@ -61,9 +61,6 @@ class PosViewSet2(generics.ListAPIView):
 # Create your views here.
 
 def upload(request):
-    print(File.objects.all())
-    print(Clip.objects.all())
-    print(Position.objects.all())
     if request.method == 'POST':
         if 'myfile' in request.FILES:
             myfile = request.FILES['myfile']
@@ -137,9 +134,6 @@ def clip(request):
         elif (pdf.pages[clip.pageNumber].mediabox[2] - pdf.pages[clip.pageNumber].mediabox[0]) * newScale > maxPageWidth:
             maxPageWidth = (pdf.pages[clip.pageNumber].mediabox[2] - pdf.pages[clip.pageNumber].mediabox[0]) * newScale
 
-    print(maxPageHeight)
-    print(maxPageWidth)
-
 
 
     # pages = convert_from_path("pdf_clip/static/upload/FF01TheWarlockofFiretopMountain.pdf", 100)
@@ -183,7 +177,6 @@ def review(request):
     #     currentClip.save()
     
     if request.method == 'POST':
-        print(request.POST['clips'])
         currentFile = File.objects.get(id=request.session['pdfFiles'])
         if 'clips' in request.POST:
             formerClips = Clip.objects.filter(fileId=currentFile)
@@ -256,8 +249,6 @@ def review(request):
             if 'clips' in request.POST:
                 for clip in requestClips:
                     if int(clip) not in posArray:
-                        print('adding new pos')
-                        print(int(clip))
                         posArray.append(int(clip))
                         pos = Position(fileId=currentFile,
                             arrayNumber = int(clip),
@@ -267,7 +258,7 @@ def review(request):
 
         # print(posArray)
         positionArray = simplejson.dumps(posArray)
-        print(positionArray)
+        # print(positionArray)
         # fileData = serializers.serialize("json", File.objects.get(id=request.session['pdfFiles']))
         # clipData = serializers.serialize("json", Clip.objects.filter(fileId = currentFile))
         clipData = Clip.objects.filter(fileId = currentFile).values()
@@ -283,7 +274,7 @@ def review(request):
             clipsDict[clip['clipNumber']]['maxX'] = clip['maxX'] 
             clipsDict[clip['clipNumber']]['note'] = clip['note'].replace('\'', '&apos;')
         clipsJson = simplejson.dumps(clipsDict)
-        print(clipsJson)
+        # print(clipsJson)
 
         # print(clipsDict)
 
@@ -342,9 +333,9 @@ def build(request):
     
     for clip in currentClips:
         newScale = math.floor(maxPageHeight / (pdf.pages[clip.pageNumber].mediabox[3] - pdf.pages[clip.pageNumber].mediabox[1]))
-        print(newScale)
+        # print(newScale)
         if clip.minX != None and clip.maxX != None:
-            print(clip.maxX - clip.minX)
+            # print(clip.maxX - clip.minX)
             if (clip.maxX - clip.minX) * newScale > maxPageWidth:
                 maxPageWidth = (clip.maxX - clip.minX) * newScale
         elif (pdf.pages[clip.pageNumber].mediabox[2] - pdf.pages[clip.pageNumber].mediabox[0]) * newScale > maxPageWidth:
@@ -396,8 +387,8 @@ def test(request):
         if dict not in leadingDict:
             noLeadsDict[dict] = bookDict[dict]
 
-    print(turnToDict)
-    print(noLeadsDict)
+    # print(turnToDict)
+    # print(noLeadsDict)
 
     # return HttpResponse("testing")
 
@@ -465,30 +456,30 @@ def test(request):
     # END RESULT
     for ref in orderArray:
         bookDict[ref].reverse()
-        if ref == 1:
-            print('[\'BEGINNING\']\t' + str(ref) + '\t' + str(bookDict[ref]))
-        else:
-            print(str(leadingDict[ref]) + '\t' + str(ref) + '\t' + str(bookDict[ref]))
+        # if ref == 1:
+        #     print('[\'BEGINNING\']\t' + str(ref) + '\t' + str(bookDict[ref]))
+        # else:
+        #     print(str(leadingDict[ref]) + '\t' + str(ref) + '\t' + str(bookDict[ref]))
 
     for ref in returnRefs:
         bookDict[ref].reverse()
-        print(str(leadingDict[ref]) + '\t' + str(ref) + '\t' + str(bookDict[ref]))
+        # print(str(leadingDict[ref]) + '\t' + str(ref) + '\t' + str(bookDict[ref]))
 
     for ref in noLeadsDict:
         bookDict[ref].reverse()
-        print('[\'ORPHAN\']\t' + str(ref) + '\t' + str(bookDict[ref]))
+        # print('[\'ORPHAN\']\t' + str(ref) + '\t' + str(bookDict[ref]))
 
     totalDict = {}
     for x in orderArray:
         if x in totalDict:
             totalDict[x] += 1
-            print(x)
+            # print(x)
         else:
             totalDict[x] = 1
 
-    print(len(orderArray))
-    print(len(returnRefs))
-    print(len(noLeadsDict))
+    # print(len(orderArray))
+    # print(len(returnRefs))
+    # print(len(noLeadsDict))
 
     # for dict in bookDict:
     #     if dict == 1:
