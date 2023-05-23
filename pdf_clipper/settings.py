@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from dotenv import load_dotenv
 import os
+import django_heroku
+import dj_database_url
 from pathlib import Path
 
 load_dotenv()
@@ -97,8 +99,8 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME'),
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASS'),
-        'HOST': os.environ.get('DB_HOST'),
-        # 'HOST': 'us-cdbr-east-06.cleardb.net',
+        # 'HOST': os.environ.get('DB_HOST'),
+        'HOST': 'us-cdbr-east-06.cleardb.net',
         'PORT': '3306',
         'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,"use_pure": True},
     }
@@ -143,7 +145,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = Path(BASE_DIR).joinpath('staticfiles')
-STATICFILES_DIRS = (Path(BASE_DIR).joinpath('pdf_clip/static'),)
+STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'), )
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -153,5 +155,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = 'pdf_clip/static/upload/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'pdf_clip/static/upload')
 
-import django_heroku
 django_heroku.settings(locals())
