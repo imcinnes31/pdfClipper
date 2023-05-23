@@ -1,1 +1,1 @@
-web: gunicorn pdfClipper/pdf_clipper/wsgi:app
+web: gunicorn pdf_clipper.wsgi
