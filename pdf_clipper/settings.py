@@ -31,8 +31,8 @@ SECRET_KEY = 'django-insecure-@z*cz%$fda0b@^=5c&*35mii&mor3=%w@clpf&x8!=v7h)od4n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ['*']
-ALLOWED_HOSTS = ['https://imcinnes31-pdfclipper.herokuapp.com/']
+ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = ['https://imcinnes31-pdfclipper.herokuapp.com/']
 
 
 # Application definition
@@ -97,8 +97,8 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME'),
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASS'),
-        # 'HOST': os.environ.get('DB_HOST'),
-        'HOST': 'us-cdbr-east-06.cleardb.net',
+        'HOST': os.environ.get('DB_HOST'),
+        # 'HOST': 'us-cdbr-east-06.cleardb.net',
         'PORT': '3306',
         'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,"use_pure": True},
     }
