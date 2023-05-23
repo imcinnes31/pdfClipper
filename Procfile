@@ -1,1 +1,1 @@
-web gunicorn pdf_clip.wsgi:application --log-file -
+web: gunicorn pdf_clip.wsgi
