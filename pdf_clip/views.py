@@ -332,14 +332,14 @@ def build(request):
             maxPageHeight = page.mediabox[3] - page.mediabox[1]
     
     for clip in currentClips:
-        newScale = math.floor(maxPageHeight / (pdf.pages[clip.pageNumber].mediabox[3] - pdf.pages[clip.pageNumber].mediabox[1]))
+        newScale = math.floor(maxPageHeight / (pdf.pages[clip.pageNumber - 1].mediabox[3] - pdf.pages[clip.pageNumber - 1].mediabox[1]))
         # print(newScale)
         if clip.minX != None and clip.maxX != None:
             # print(clip.maxX - clip.minX)
             if (clip.maxX - clip.minX) * newScale > maxPageWidth:
                 maxPageWidth = (clip.maxX - clip.minX) * newScale
-        elif (pdf.pages[clip.pageNumber].mediabox[2] - pdf.pages[clip.pageNumber].mediabox[0]) * newScale > maxPageWidth:
-            maxPageWidth = (pdf.pages[clip.pageNumber].mediabox[2] - pdf.pages[clip.pageNumber].mediabox[0]) * newScale
+        elif (pdf.pages[clip.pageNumber - 1].mediabox[2] - pdf.pages[clip.pageNumber - 1].mediabox[0]) * newScale > maxPageWidth:
+            maxPageWidth = (pdf.pages[clip.pageNumber - 1].mediabox[2] - pdf.pages[clip.pageNumber - 1].mediabox[0]) * newScale
 
     currentFile.maxPageHeight = maxPageHeight
     currentFile.maxPageWidth = maxPageWidth
