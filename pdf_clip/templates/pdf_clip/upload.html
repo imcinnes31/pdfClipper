@@ -3,7 +3,7 @@
 {% block head %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My PDF Viewer Clip Review</title>
+    <title>PDF Clipper</title>
     <style>
         body {
             text-align: center;
@@ -12,7 +12,6 @@
 {% endblock %}
 {% block body %}
     <h1>PDF Clipper</h1>
-    <h3>1</h3>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="file" name="myfile">
