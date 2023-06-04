@@ -119,7 +119,8 @@
 
             React.useEffect(() => {
 
-                fetch("http://127.0.0.1:8000/pdfclip/api/files?fileId={{fileId}}")
+                // fetch("http://127.0.0.1:8000/pdfclip/api/files?fileId={{fileId}}")
+                fetch("https://imcinnes31-pdfclipper.herokuapp.com/pdfclip/api/files?fileId={{fileId}}")
                 .then(res => res.json())
                 .then(
                     (result) => {
@@ -130,7 +131,8 @@
                     }
                 )
 
-                fetch("http://127.0.0.1:8000/pdfclip/api/clips?fileId={{fileId}}")
+                // fetch("http://127.0.0.1:8000/pdfclip/api/clips?fileId={{fileId}}")
+                fetch("https://imcinnes31-pdfclipper.herokuapp.com/pdfclip/api/clips?fileId={{fileId}}")
                 .then(res => res.json())
                 .then(
                     (result) => {
@@ -152,7 +154,8 @@
                     }
                 )
 
-                fetch("http://127.0.0.1:8000/pdfclip/api/pos?fileId={{fileId}}")
+                // fetch("http://127.0.0.1:8000/pdfclip/api/pos?fileId={{fileId}}")
+                fetch("https://imcinnes31-pdfclipper.herokuapp.com/pdfclip/api/pos?fileId={{fileId}}")
                 .then(res => res.json())
                 .then(
                     (result) => {
