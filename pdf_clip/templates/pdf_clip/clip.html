@@ -413,6 +413,17 @@
                     mouseDown = true;
                     lineDragged = "line3";
                 }
+
+                document.getElementById("line_container_1").ontouchmove = function() { 
+                    lineDragged = "line1";
+                }
+                document.getElementById("line_container_2").ontouchmove = function() { 
+                    lineDragged = "line2";
+                }
+                document.getElementById("line_container_3").ontouchmove = function() { 
+                    lineDragged = "line3";
+                }
+
                 document.body.onmouseup = function() {
                     mouseDown = false;
                 }
