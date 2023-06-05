@@ -67,7 +67,7 @@ def upload(request):
             fs = FileSystemStorage()
             pdffilename = fs.save(myfile.name, myfile)
             ext = str(pdffilename).split(".")[-1]
-            if ext == "pdf":
+            if ext.lower() == "pdf":
                 pdf = PdfReader("pdf_clip/static/upload/" + pdffilename,"rb")
                 pdfFile = File(fileName=pdffilename, pages=len(pdf.pages))
                 pdfFile.save()
