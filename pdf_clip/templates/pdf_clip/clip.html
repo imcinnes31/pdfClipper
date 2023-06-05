@@ -35,12 +35,14 @@
                 height: 20px;
                 /* border: 1px solid black; */
                 left: 0px;
+                touch-action: none;
             }
             #line_container_3 {
                 position: absolute;
                 width: 20px;
                 height: 630px;
                 top: -10px;
+                touch-action: none;
             }
             #line_container_1 {
                 top: 3px;
@@ -475,6 +477,62 @@
                         }
                     }
                 });
+
+                div.addEventListener('touchmove', function(event) {
+                    var cursorY;
+                    var cursorX;
+                    
+                    if (event.touches[0].clientY - rect.top < 3) {
+                        cursorY = 3;
+                    } else if (event.touches[0].clientY - rect.top > maxYLimit + 3) {
+                        cursorY = maxYLimit + 3;
+                    } else {
+                        cursorY = event.touches[0].clientY - rect.top;
+                    }
+
+                    if (event.touches[0].clientX - rect.left < minXLimit + 12) {
+                        cursorX = minXLimit + 12;
+                    } else if (event.touches[0].clientX - rect.left > maxXLimit + 12) {
+                        cursorX = maxXLimit + 12;
+                    } else {
+                        cursorX = event.touches[0].clientX - rect.left;
+                    }
+
+                    // document.getElementById("cursorPos").innerHTML = lineDragged + " " + (cursorY - 3) + " " +  + (cursorX - 12 - minXLimit);
+                    if (lineDragged == "line1") {
+                        line1Pos = cursorY - 3;
+                        if (line1Pos < line2Pos) {
+                            document.getElementById("line_1").style.borderColor = "red";
+                            document.getElementById("line_1_cursor").style.borderColor = "red";
+                            document.getElementById("line_2").style.borderColor = "blue";
+                            document.getElementById("line_2_cursor").style.borderColor = "blue";
+                        } else if (line1Pos > line2Pos) {
+                            document.getElementById("line_1").style.borderColor = "blue";
+                            document.getElementById("line_1_cursor").style.borderColor = "blue";
+                            document.getElementById("line_2").style.borderColor = "red";
+                            document.getElementById("line_2_cursor").style.borderColor = "red";
+                        }
+                        document.getElementById("line_container_1").style.top = cursorY + "px";
+                    } else if (lineDragged == "line2") {
+                        line2Pos = cursorY - 3;
+                        if (line2Pos < line1Pos) {
+                            document.getElementById("line_2").style.borderColor = "red";
+                            document.getElementById("line_2_cursor").style.borderColor = "red";
+                            document.getElementById("line_1").style.borderColor = "blue";
+                            document.getElementById("line_1_cursor").style.borderColor = "blue";
+                        } else if (line2Pos > line1Pos) {
+                            document.getElementById("line_2").style.borderColor = "blue";
+                            document.getElementById("line_2_cursor").style.borderColor = "blue";
+                            document.getElementById("line_1").style.borderColor = "red";
+                            document.getElementById("line_1_cursor").style.borderColor = "red";
+                        }
+                        document.getElementById("line_container_2").style.top = cursorY + "px";
+                    } else if (lineDragged == "line3") {
+                        line3Pos = cursorX - 12 - minXLimit;
+                        document.getElementById("line_container_3").style.left = cursorX + "px";
+                    }
+                });
+
 
             document.getElementById('save_pos')
                 .addEventListener('click', (e) => {
