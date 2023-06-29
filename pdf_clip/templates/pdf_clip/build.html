@@ -39,6 +39,14 @@
             return response.json();
         }
 
+        async function getPosData() {
+            const response = await fetch("https://imcinnes31-pdfclipper.herokuapp.com/pdfclip/api/pos?fileId={{fileId}}");
+            if (!response.ok) {
+                throw new Error("HTTP error " + response.status);
+            }
+            return response.json();
+        }
+
         (async ()=>{
             const fileData = (await getFileData())[0];
             const clipResult = await getClipData();
@@ -99,7 +107,13 @@
             pdfWrite.setFont("courier");
             pdfWrite.setFontSize(12);
 
-            const positionArray = JSON.parse(fileData['positionArray']);
+            const positionArrayData = getPosData();
+            const positionArray = []
+            for (const x in positionArrayData) {
+                positionArray.push(x['posNumber']);
+            }
+            console.log(positionArrayData);
+            console.log(positionArray);
 
             for (const x in positionArray) {
 
