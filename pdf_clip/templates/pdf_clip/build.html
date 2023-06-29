@@ -47,128 +47,138 @@
             return response.json();
         }
 
-        (async ()=>{
-            const fileData = (await getFileData())[0];
-            const clipResult = await getClipData();
+        document.addEventListener('DOMContentLoaded', function () {
+            (async ()=>{
+                const fileData = (await getFileData())[0];
+                const clipResult = await getClipData();
 
-            var clipData = {};
-            for (const x in clipResult) {
-                clipData[clipResult[x]['clipNumber']] = {};
-                clipData[clipResult[x]['clipNumber']]['pageNumber'] = clipResult[x]['pageNumber'];
-                clipData[clipResult[x]['clipNumber']]['minY'] = clipResult[x]['minY'];
-                clipData[clipResult[x]['clipNumber']]['maxY'] = clipResult[x]['maxY'];
-                clipData[clipResult[x]['clipNumber']]['minX'] = clipResult[x]['minX'];
-                clipData[clipResult[x]['clipNumber']]['maxX'] = clipResult[x]['maxX'];
-                clipData[clipResult[x]['clipNumber']]['note'] = clipResult[x]['note'];
-            }
+                var clipData = {};
+                for (const x in clipResult) {
+                    clipData[clipResult[x]['clipNumber']] = {};
+                    clipData[clipResult[x]['clipNumber']]['pageNumber'] = clipResult[x]['pageNumber'];
+                    clipData[clipResult[x]['clipNumber']]['minY'] = clipResult[x]['minY'];
+                    clipData[clipResult[x]['clipNumber']]['maxY'] = clipResult[x]['maxY'];
+                    clipData[clipResult[x]['clipNumber']]['minX'] = clipResult[x]['minX'];
+                    clipData[clipResult[x]['clipNumber']]['maxX'] = clipResult[x]['maxX'];
+                    clipData[clipResult[x]['clipNumber']]['note'] = clipResult[x]['note'];
+                }
 
-            var currentWriteHeight = 0;
+                var currentWriteHeight = 0;
 
-            var maxPageHeight = fileData['maxPageHeight'];
-            const fileName = '../static/upload/' + fileData['fileName'];
-            const pdfRead = await pdfjsLib.getDocument(fileName);
+                var maxPageHeight = fileData['maxPageHeight'];
+                const fileName = '../static/upload/' + fileData['fileName'];
+                const pdfRead = await pdfjsLib.getDocument(fileName);
 
-            const maxLineLength = Math.floor((fileData.maxPageWidth - 10) / 5.4);
-            var origPageScale = fileData.maxPageHeight / 600;
+                const maxLineLength = Math.floor((fileData.maxPageWidth - 10) / 5.4);
+                var origPageScale = fileData.maxPageHeight / 600;
 
-            for (const clip in clipData) {
-                let lines = [];
-                let currentLineLength = 0;
-                let currentLine = '';
-                if (clipData[clip]['note'].length > 0) {
-                    const pageToCheck = await pdfRead.getPage(clipData[clip]['pageNumber']);
-                    origPageScale = (pageToCheck.view[3] - pageToCheck.view[1]) / 600;
-                    const noteWords = clipData[clip]['note'].split(' ');
+                for (const clip in clipData) {
+                    let lines = [];
+                    let currentLineLength = 0;
+                    let currentLine = '';
+                    if (clipData[clip]['note'].length > 0) {
+                        const pageToCheck = await pdfRead.getPage(clipData[clip]['pageNumber']);
+                        origPageScale = (pageToCheck.view[3] - pageToCheck.view[1]) / 600;
+                        const noteWords = clipData[clip]['note'].split(' ');
 
-                    for (const note in noteWords) {
-                        if (currentLineLength + noteWords[note].length + 1 > maxLineLength) {
-                            lines.push(currentLine);
-                            currentLine = '';
-                            currentLineLength = 0;
+                        for (const note in noteWords) {
+                            if (currentLineLength + noteWords[note].length + 1 > maxLineLength) {
+                                lines.push(currentLine);
+                                currentLine = '';
+                                currentLineLength = 0;
+                            }
+                            currentLineLength += noteWords[note].length + 1;
+                            currentLine += noteWords[note] + ' ';
                         }
-                        currentLineLength += noteWords[note].length + 1;
-                        currentLine += noteWords[note] + ' ';
-                    }
-                    lines.push(currentLine);
-                    clipData[clip]['noteLines'] = lines;
+                        lines.push(currentLine);
+                        clipData[clip]['noteLines'] = lines;
 
-                    const totalSize = lines.length * 16 + (lines.length > 0 ? 4 : 0) + ((clipData[clip]['maxY'] - clipData[clip]['minY']) * origPageScale);
+                        const totalSize = lines.length * 16 + (lines.length > 0 ? 4 : 0) + ((clipData[clip]['maxY'] - clipData[clip]['minY']) * origPageScale);
 
-                    if (totalSize > maxPageHeight) {
-                        maxPageHeight = totalSize;
-                    }
-                }
-            }
-
-            const hSize = fileData['maxPageWidth'];
-            const vSize = maxPageHeight;
-
-            const pdfWrite = new jsPDF({unit: 'px',format: [hSize, vSize]});
-            pdfWrite.setFont("courier");
-            pdfWrite.setFontSize(12);
-
-            const positionArrayData = await getPosData();
-            const positionArray = []
-            for (const x in positionArrayData) {
-                positionArray.push(positionArrayData[x]['posNumber']);
-            }
-            console.log(positionArrayData);
-            console.log(positionArray);
-
-            for (const x in positionArray) {
-
-                const currentClip = clipData[positionArray[x]];
-                const currentPage = currentClip['pageNumber'];
-
-                const page = await pdfRead.getPage(currentPage);
-                
-                const canvas1 = document.createElement('canvas');
-                const ctx = canvas1.getContext("2d", { willReadFrequently: true });
-                const viewport = page.getViewport(1);
-                canvas1.width = viewport.width;
-                canvas1.height = viewport.height;
-
-                const minY = currentClip['minY'] * (page.view[3] - page.view[1]) / 600;
-                const maxY = currentClip['maxY'] * (page.view[3] - page.view[1]) / 600;
-                let minX = 0; 
-                let maxX = (page.view[2] - page.view[0]);
-                if (currentClip['minX'] != null && currentClip['maxX'] != null) {
-                    minX = currentClip['minX'] * (page.view[3] - page.view[1]) / 600;
-                    maxX = currentClip['maxX'] * (page.view[3] - page.view[1]) / 600;
-                }
-
-                const rendered = await page.render({
-                    canvasContext: ctx,
-                    viewport: viewport
-                });
-
-                const clipImgData = ctx.getImageData(minX, minY, (maxX - minX), (maxY - minY));
-                canvas1.width = (maxX - minX);
-                canvas1.height = (maxY - minY);
-                ctx.putImageData(clipImgData, 0, 0);
-
-                if ((currentClip['note'].length > 0 && (currentWriteHeight + (canvas1.height) + (currentClip['noteLines'].length * 16) + 4) > vSize) || (currentClip['note'].length == 0 && (currentWriteHeight + canvas1.height) > vSize)) {
-                    pdfWrite.addPage({format: [hSize, vSize]});
-                    currentWriteHeight = 0;
-                }
-
-                if (currentClip['note'].length > 0) {
-                    currentWriteHeight += 4
-                    for (const line in currentClip['noteLines']) {
-                        pdfWrite.text(currentClip['noteLines'][line], 5, currentWriteHeight + 8);
-                        currentWriteHeight += 16;
+                        if (totalSize > maxPageHeight) {
+                            maxPageHeight = totalSize;
+                        }
                     }
                 }
 
-                pdfWrite.addImage(canvas1, 'PNG', 0, currentWriteHeight, canvas1.width, canvas1.height);
-                currentWriteHeight += canvas1.height;
+                const hSize = fileData['maxPageWidth'];
+                const vSize = maxPageHeight;
 
-                canvas1.remove();
+                const pdfWrite = new jsPDF({unit: 'px',format: [hSize, vSize]});
+                pdfWrite.setFont("courier");
+                pdfWrite.setFontSize(12);
 
-            }
-            window.open(pdfWrite.output('bloburl'), '_blank');
+                const positionArrayData = await getPosData();
+                const positionArray = []
+                for (const x in positionArrayData) {
+                    positionArray.push(positionArrayData[x]['posNumber']);
+                }
+                console.log(positionArrayData);
+                console.log(positionArray);
 
-        })();
+                for (const x in positionArray) {
+
+                    const currentClip = clipData[positionArray[x]];
+                    const currentPage = currentClip['pageNumber'];
+
+                    const page = await pdfRead.getPage(currentPage);
+                    
+                    const canvas1 = document.createElement('canvas');
+                    const ctx = canvas1.getContext("2d", { willReadFrequently: true });
+                    const viewport = page.getViewport(1);
+                    canvas1.width = viewport.width;
+                    canvas1.height = viewport.height;
+
+                    const minY = currentClip['minY'] * (page.view[3] - page.view[1]) / 600;
+                    const maxY = currentClip['maxY'] * (page.view[3] - page.view[1]) / 600;
+                    let minX = 0; 
+                    let maxX = (page.view[2] - page.view[0]);
+                    if (currentClip['minX'] != null && currentClip['maxX'] != null) {
+                        minX = currentClip['minX'] * (page.view[3] - page.view[1]) / 600;
+                        maxX = currentClip['maxX'] * (page.view[3] - page.view[1]) / 600;
+                    }
+
+                    const rendered = await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    });
+
+                    const clipImgData = ctx.getImageData(minX, minY, (maxX - minX), (maxY - minY));
+                    canvas1.width = (maxX - minX);
+                    canvas1.height = (maxY - minY);
+                    ctx.putImageData(clipImgData, 0, 0);
+
+                    if ((currentClip['note'].length > 0 && (currentWriteHeight + (canvas1.height) + (currentClip['noteLines'].length * 16) + 4) > vSize) || (currentClip['note'].length == 0 && (currentWriteHeight + canvas1.height) > vSize)) {
+                        pdfWrite.addPage({format: [hSize, vSize]});
+                        currentWriteHeight = 0;
+                    }
+
+                    if (currentClip['note'].length > 0) {
+                        currentWriteHeight += 4
+                        for (const line in currentClip['noteLines']) {
+                            pdfWrite.text(currentClip['noteLines'][line], 5, currentWriteHeight + 8);
+                            currentWriteHeight += 16;
+                        }
+                    }
+
+                    pdfWrite.addImage(canvas1, 'PNG', 0, currentWriteHeight, canvas1.width, canvas1.height);
+                    currentWriteHeight += canvas1.height;
+
+                    canvas1.remove();
+
+                    let pdfProgressPercent = Math.floor(x / posArray.length * 100);
+
+                    document.getElementById('pdfPercent').innerHTML = ('Progress: ' + pdfProgressPercent + '%');
+                    document.getElementById('pdfProgressBar').style.width = (pdfProgressPercent + '%');
+
+                }
+                document.getElementById('pdfPercent').innerHTML = 'Progress: 100%';
+                document.getElementById('pdfProgressBar').style.width = '100%';
+
+                window.open(pdfWrite.output('bloburl'), '_blank');
+
+            })();
+        });
 
         //     React.useEffect(() => {
 
@@ -498,24 +508,12 @@
 {% endblock %}
 {% block body %}
     <div style="text-align: center;">
-        <h1 id="progressMessage"></h1>
+        <h1 id="progressMessage">Creating new PDF File...</h1>
         <div class="progressDiv" id="pdfProgress">
             <div class="progress">
                 <div id="pdfProgressBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             <p id="pdfPercent">Progress: 0%</p>
-        </div>
-        <div class="progressDiv" id="readProgress">
-            <div class="progress">
-                <div id="readProgressBar" class="progress-bar bg-warning" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <p id="readPercent">Progress: 0%</p>
-        </div>
-        <div class="progressDiv" id="writeProgress">
-            <div class="progress">
-                <div id="writeProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <p id="writePercent">Progress: 0%</p>
         </div>
         <form id="backToReview" method="post" action="{% url 'review' %}">
             {% csrf_token %}

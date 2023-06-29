@@ -45,54 +45,42 @@
             });
 
             function render(pageNumber, minY, maxY, minX, maxX) {
-                myPdf.getPage(pageNumber).then((page) => {
-                // myPdf.getPage(24).then((page) => {
-        
-                    // console.log(page.view);
-                
-                    // console.log(Math.floor(600 / page.view[3] * 100) / 100);
-        
-                    var canvas = document.getElementById("pdf_renderer");
-                    var ctx = canvas.getContext("2d", { willReadFrequently: true });
-        
+                (async ()=>{
+                    const page = await myPdf.getPage(pageNumber);
+                    
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            
                     const scale = Math.floor(600 / (page.view[3] - page.view[1]) * 100) / 100;
                     var viewport = page.getViewport(scale);
-                    // var viewport = page.getViewport(1);
-        
+                        // var viewport = page.getViewport(1);
+            
                     canvas.width = viewport.width;
                     canvas.height = viewport.height;
 
-                    page.render({
-                        canvasContext: ctx,
-                        viewport: viewport
-                    })
-                    .then((page) => {
-                        // sample data for rendering partial render in inspection page
-                        let imageData;
-                        if (minX == null && maxX == null) {
-                            imageData = ctx.getImageData(0, minY, viewport.width, maxY - minY);   // 0, line2, page width, section height (line 2 minus line 1)
-                        } else {
-                            imageData = ctx.getImageData(minX, minY, maxX - minX, maxY - minY);   // 0, line2, page width, section height (line 2 minus line 1)
-                        }
-                        var canvas1 = document.getElementById("pdf_renderer");
-                        if (minX == null && maxX == null) {
-                            canvas1.width = viewport.width;
-                        } else {
-                            canvas1.width = maxX - minX;
-                        }
-                        canvas1.height = 600;
-                        let ctx1 = canvas1.getContext("2d", { willReadFrequently: true });
-                        ctx1.rect(0, 0, 600, 600);
-                        ctx1.fillStyle = '#333';
-                        ctx1.fill();
-                        ctx1.putImageData(imageData, 0, Math.ceil((600 - (maxY - minY))/2));
-        
-                    })
-                    ;
-        
-        
-                });
-        
+                    const renderedPage = await page.render({canvasContext: ctx, viewport: viewport})
+
+                    let imageData;
+                    if (minX == null && maxX == null) {
+                        imageData = ctx.getImageData(0, minY, viewport.width, maxY - minY);   // 0, line2, page width, section height (line 2 minus line 1)
+                    } else {
+                        imageData = ctx.getImageData(minX, minY, maxX - minX, maxY - minY);   // 0, line2, page width, section height (line 2 minus line 1)
+                    }
+                    var canvas1 = document.getElementById("pdf_renderer");
+                    if (minX == null && maxX == null) {
+                        canvas1.width = viewport.width;
+                    } else {
+                        canvas1.width = maxX - minX;
+                    }
+                    canvas1.height = 600;
+                    let ctx1 = canvas1.getContext("2d", { willReadFrequently: true });
+                    ctx1.rect(0, 0, 600, 600);
+                    ctx1.fillStyle = '#333';
+                    ctx1.fill();
+                    ctx1.putImageData(imageData, 0, Math.ceil((600 - (maxY - minY))/2));
+
+                    canvas.remove();
+                })();
             }
  
             document.addEventListener('DOMContentLoaded', function () {

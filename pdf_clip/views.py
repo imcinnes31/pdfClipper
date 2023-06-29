@@ -110,7 +110,7 @@ def upload(request):
                 if (file != 'FF01TheWarlockofFiretopMountain.pdf'):
                     # print(file)
                     fileSystem.delete(file)
-                    thisFile = File.objects.get(fileName=file)
+                    thisFile = File.objects.filter(fileName=file)[0]
                     # print(thisFile)
                     thisFile.delete()
 
