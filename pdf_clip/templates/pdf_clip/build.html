@@ -110,7 +110,7 @@
             const positionArrayData = await getPosData();
             const positionArray = []
             for (const x in positionArrayData) {
-                positionArray.push(x['posNumber']);
+                positionArray.push(positionArrayData[x]['posNumber']);
             }
             console.log(positionArrayData);
             console.log(positionArray);
