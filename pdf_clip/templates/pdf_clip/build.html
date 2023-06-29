@@ -107,7 +107,7 @@
             pdfWrite.setFont("courier");
             pdfWrite.setFontSize(12);
 
-            const positionArrayData = getPosData();
+            const positionArrayData = await getPosData();
             const positionArray = []
             for (const x in positionArrayData) {
                 positionArray.push(x['posNumber']);
