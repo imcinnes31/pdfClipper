@@ -17,12 +17,9 @@
          }
     </style>
 
-    <div id="app"></div>
-
     <script>
 
         // const newResolution = 2;
-        var currentWriteHeight = 0;
         var hSize;
         var vSize;
 
@@ -56,6 +53,12 @@
                 clipData[clipResult[x]['clipNumber']]['maxX'] = clipResult[x]['maxX'];
                 clipData[clipResult[x]['clipNumber']]['note'] = clipResult[x]['note'];
             }
+
+            var currentWriteHeight = 0;
+
+            var maxPageHeight = fileData['maxPageHeight'];
+            const fileName = '../static/upload/' + fileData['fileName'];
+            const pdfRead = await pdfjsLib.getDocument(fileName);
 
             const maxLineLength = Math.floor((fileData.maxPageWidth - 10) / 5.4);
             var origPageScale = fileData.maxPageHeight / 600;
