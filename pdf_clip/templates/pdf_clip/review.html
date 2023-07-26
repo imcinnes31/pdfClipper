@@ -44,6 +44,7 @@
                 myPdf = pdf;
             });
 
+            // This loads the 'view' screen so you can review what the clip looks like
             function render(pageNumber, minY, maxY, minX, maxX) {
                 (async ()=>{
                     const page = await myPdf.getPage(pageNumber);
@@ -58,6 +59,7 @@
                     canvas.width = viewport.width;
                     canvas.height = viewport.height;
 
+                    // render the page to put in the view screen
                     const renderedPage = await page.render({canvasContext: ctx, viewport: viewport})
 
                     let imageData;
@@ -84,35 +86,22 @@
             }
  
             document.addEventListener('DOMContentLoaded', function () {
+                // Django view data
                 clipData = JSON.parse('{{ clipsJson|safe }}');
                 fileData = ('{{ currentFile }}');
                 posArray = JSON.parse('{{ posArray|safe }}');
 
                 var dictLength = Object.keys(clipData).length;
-                // for (let i = 0; i < dictLength; i++) {
-                //     posArray.push(i);
-                // }
 
                 setupTable(clipData, posArray);
 
                 setupButtons();
 
-                // for (let i = 0; i < dictLength; i++) {
-                //     if (clipData[i]['note']) {
-                //         const noteId = "note" + i;
-                //         document.getElementById(noteId).innerHTML = clipData[i]['note'];
-                //     }
-                // }
-                // if (notesData[dictLength]) {
-                //     noteId = "note" + posArray.length;
-                //     document.getElementById(noteId).innerHTML = notesData[dictLength];
-                // }
 
             });
 
             function setupTable(clipData, posArray) {
-                // console.log(clipData);
-                // console.log(posArray);
+                // set up table of pdf clips, including clip number, page number, move checkboxes, and buttons for notes, deleting, and viewing
                 var tableContents = "<tr id='tableHeader'><th></th><th>Clip No.</th><th>Page</th><th style='width:250px'>Note</th><th></th><th></th><th></th></tr>";
                 for (number in posArray) {
                     tableContents += "<tr id='row" + number + "'>";
@@ -120,11 +109,6 @@
                     tableContents += "<td id='clip" + posArray[number] + "'>" + posArray[number] + "</td>";
                     tableContents += "<td>" + clipData[posArray[number]]['pageNumber'] + "</td>";
                     tableContents += "<td style='width:250px' id='note" + posArray[number] + "'>" + clipData[posArray[number]].note + "</td>";
-                    // if (notesData[posArray[number]]) {
-                    //     tableContents += "<td id='note" + posArray[number] + "'>" + notesData[posArray[number]] + "</td>";
-                    // } else {
-                    //     tableContents += "<td id='note" + posArray[number] + "'></td>";
-                    // }
                     tableContents += "<td><button class='noteButton' id='editNote" + posArray[number] + "'>Edit Note</button>";
                     tableContents += "<button class='saveNoteButton' id='saveNote" + posArray[number] + "' style='display:none;'>Save Note</button></td>";
                     tableContents += "<td><button class='deleteButton' id='delete" + posArray[number] + "'>Delete Clip</button></td>";
@@ -132,16 +116,13 @@
                     tableContents += "</tr>";
                 }
 
-                // console.log(clipData);
-                // console.log(posArray);
-                // if (notesData[posArray.length]) {
-                //     tableContents += "<tr><td></td><td>End</td><td></td><td></td><td></td><td id='note" + posArray.length + "Final'>" + notesData[posArray.length] + "</td><td><button class='noteButton' id='editNote" + posArray.length + "'>Edit Note</button></td></tr>";
-                // }
                 document.getElementById("clipTable").innerHTML = tableContents;
             }
 
+            // sets up buttons in the table
             function setupButtons() {
 
+                // view button to see what your clip looks like
                 document.querySelectorAll('.viewButton').forEach(button => {
                     button.addEventListener('click', function handleClick(event) {
                         const idNumber = event.target.id.replace('view', '');
@@ -151,11 +132,12 @@
                     });
                 });
 
+                // delete button to delete clip from list (and table)
                 document.querySelectorAll('.deleteButton').forEach(button => {
                     button.addEventListener('click', function handleClick(event) {
                         const idNumber = event.target.id.replace('delete', '');
+                        // deletes clip from data, from table, and from position in list
                         deleteArray.push(parseInt(idNumber));
-                        // console.log(deleteArray);
                         delete clipData[idNumber];
                         posArray.splice(posArray.indexOf(parseInt(idNumber)), 1);
                         if (posArray.length == 0) {
@@ -181,6 +163,7 @@
 
                 });
 
+                // button to add note to clip
                 document.querySelectorAll('.noteButton').forEach(button => {
                     button.addEventListener('click', function handleClick(event) {
 
@@ -188,8 +171,8 @@
                         const saveNoteId = event.target.id.replace("editNote", "saveNote");
                         const currentNote = document.getElementById(noteId).innerHTML;
                         const newNote = currentNote.replace('&apos;','\'');
-                        console.log(newNote);
 
+                        // disable other buttons while note is being made
                         document.querySelectorAll('.noteButton').forEach(e => {
                             if (e != event.target) {
                                 e.disabled = true;
@@ -208,6 +191,7 @@
                         document.getElementById(noteId).childNodes[0].value = newNote;
                         document.getElementById('messageEdit').focus()
 
+                        // make buttons to save note
                         document.getElementById(saveNoteId).replaceWith(document.getElementById(saveNoteId).cloneNode(true));
                         document.getElementById(saveNoteId).addEventListener('click', function handleClick(event) {
                             const noteId = event.target.id.replace("saveNote", "note");
@@ -240,11 +224,9 @@
                     });
                 });
 
+                // checkboxes to move clips around
                 document.querySelectorAll('.moveCheckbox').forEach(button => {
                     button.addEventListener('click', function handleClick(event) {
-                        // console.log(event.target.id);
-                        // console.log(event.target.parentNode.parentNode.id);
-                        // console.log(event.target.checked);
                         if (event.target.checked == true) {
                             moveArray.push(posArray[parseInt(event.target.parentNode.parentNode.id.replace("row",""))]);
                         } else {
@@ -256,7 +238,6 @@
                         } else {
                             document.getElementById("moveButton").style.display="none";
                         }
-                        // console.log(moveArray);
 
                     });
                 });
@@ -264,6 +245,7 @@
             }
 
 
+            // when the "move nodes" button is clicked, buttons appear which show where to move the selected clips to
             function showMoveButtons() {
                 const firstMoveButton = "<tr class='moveToRow'><td><button class='moveToButton' id='moveTo0'>Move here</button></td></tr>"
                 document.getElementById("tableHeader").insertAdjacentHTML("afterend", firstMoveButton);
@@ -280,6 +262,7 @@
                         document.getElementById(clipId).style.color = "red";
                     }
                 }
+                // disable other buttons while moving
                 for (let i = 0; i < posArray.length; i++) {
                     const checkButtonId = 'moveCheck' + i;
                     const notButtonId = 'editNote' + posArray[i];
@@ -293,10 +276,7 @@
 
                 document.querySelectorAll('.moveToButton').forEach(button => {
                     button.addEventListener('click', function handleMoveClick(event) {
-                        // console.log('moving');
-                        // console.log(posArray);
-                        // console.log(moveArray);
-                        // console.log(event.target.id);
+                        // rearrange clip list in new order
                         moveArray.reverse();
                         for (number in moveArray) {
                             const index = posArray.indexOf(moveArray[number]);
@@ -305,7 +285,6 @@
                             }
                         }
                         moveNumber = parseInt(event.target.id.replace("moveTo",""));
-                        // console.log("move number: " + moveNumber);
                         if (moveNumber == posArray.length) {
                             moveArray.reverse();
                             for (number in moveArray) {
@@ -316,7 +295,6 @@
                                 posArray.splice(moveNumber,0,moveArray[number]);
                             }
                         }
-                        // console.log(posArray);
 
                         hideMoveButtons();
 
@@ -350,6 +328,7 @@
                 moveArray = [];
             }
 
+            // get data ready for moving to next page (or previous page)
             function addReturnFormInfo() {
                 var form=document.getElementById('returnForm');
 
@@ -413,26 +392,7 @@
         <div id="reviewClipsScreen">
             <div id="clipListScreen">
                 <table id="clipTable">
-                    <!-- <tr id="tableHeader">
-                        <th></th>
-                        <th></th>
-                        <th>Page</th>
-                        <th></th>
-                        <th>Note</th>
-                        <th></th>
-                    </tr>
-            
-                    {% for key,value in clipsList.items %}
-                        <tr id="row{{forloop.counter0}}">
-                            <td><input type="checkbox" class="moveCheckbox" id="moveCheck{{forloop.counter0}}"></td>
-                            <td>{{key}}</td>
-                            <td>{{value.page}}</td>
-                            <td><button class="viewButton" id="view{{key}}">View</button></td>
-                            <td id="note{{forloop.counter0}}">{{value.note}}</td>
-                            <td><button class="noteButton" id="editNote{{key}}">Edit Note</button></td>
-                        </tr>
-                    {% endfor %}
-                    <tr><td><button class="moveToButton" id="moveTo{{clipsList|length}}" style="display:none">Move here</button></td></tr> -->
+                    <!-- where list of clips goes -->
                 </table>
             
             </div>
@@ -446,6 +406,7 @@
                 
         </div>
         <div id="reviewRenderScreen">
+            <!-- screen for viewing your clips -->
             <div id="pdf_screen">
                 <div id="canvas_container">
                     <canvas id="pdf_renderer"></canvas>

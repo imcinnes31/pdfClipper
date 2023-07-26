@@ -61,6 +61,8 @@ class PosViewSet2(generics.ListAPIView):
 # Create your views here.
 
 def upload(request):
+    print(File.objects.all())
+
     if request.method == 'POST':
         if 'myfile' in request.FILES:
             myfile = request.FILES['myfile']
@@ -105,14 +107,17 @@ def upload(request):
     else:
         fileSystem = FileSystemStorage()
         allFiles = fileSystem.listdir(fileSystem.location)[1]
+        # print(allFiles)
         if (len(allFiles) > 0):
             for file in allFiles:
                 if (file != 'FF01TheWarlockofFiretopMountain.pdf'):
                     # print(file)
                     fileSystem.delete(file)
-                    thisFile = File.objects.filter(fileName=file)[0]
-                    # print(thisFile)
-                    thisFile.delete()
+                    thisFile = File.objects.filter(fileName=file)
+                    if (len(thisFile) > 0):
+                        # print(thisFile[0])
+                        thisFile[0].delete()
+
 
         return render(request, 'pdf_clip/upload.html')
 
@@ -164,9 +169,6 @@ def clip(request):
 
 
 def review(request):
-    # print(File.objects.all())
-    # print(Clip.objects.all())
-    # print(Position.objects.all())
     # clips = request.POST['clips'].split('\t')
     # print(request.session['pdfFiles'])
     # currentFile = File.objects.get(id=request.session['pdfFiles'])
