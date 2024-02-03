@@ -13,19 +13,14 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from dotenv import load_dotenv
 import os
 import django_heroku
-import dj_database_url
 from pathlib import Path
 
 load_dotenv()
-# load_dotenv(encoding='utf8')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-@z*cz%$fda0b@^=5c&*35mii&mor3=%w@clpf&x8!=v7h)od4n'
@@ -34,8 +29,6 @@ SECRET_KEY = 'django-insecure-@z*cz%$fda0b@^=5c&*35mii&mor3=%w@clpf&x8!=v7h)od4n
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-# ALLOWED_HOSTS = ['https://imcinnes31-pdfclipper.herokuapp.com/']
-
 
 # Application definition
 
@@ -81,46 +74,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'pdf_clipper.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
-
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'mysql.connector.django',
-#         'NAME': os.environ.get('DB_NAME'),
-#         'USER': os.environ.get('DB_USER'),
-#         'PASSWORD': os.environ.get('DB_PASS'),
-#         'HOST': os.environ.get('DB_HOST'),
-#         # 'HOST': 'us-cdbr-east-06.cleardb.net',
-#         'PORT': '3306',
-#         'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,"use_pure": True},
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': 'heroku_cd4d6a185aa1464',
-        'USER': 'b475f50424156e',
-        'PASSWORD': '59700f56',
-        'HOST': 'us-cdbr-east-06.cleardb.net',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'heroku_a41adf903e937a2',
+        'USER': 'b6e526988cfe5a',
+        'PASSWORD': '5f2b591b',
+        'HOST': 'us-cluster-east-01.k8s.cleardb.net',
         'PORT': '3306',
-        'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,"use_pure": True},
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,
+            # "use_pure": True,
+        },
     }
 }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
