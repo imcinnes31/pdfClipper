@@ -76,7 +76,7 @@ WSGI_APPLICATION = 'pdf_clipper.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'dj_db_conn_pool.backends.mysql',
         'NAME': 'heroku_a41adf903e937a2',
         'USER': 'b6e526988cfe5a',
         'PASSWORD': '5f2b591b',
@@ -84,7 +84,6 @@ DATABASES = {
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'" ,
-            # "use_pure": True,
         },
     }
 }
